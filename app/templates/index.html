@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Network Monitoring (Flask + Scapy)</title>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      padding: 20px; 
+      background:#0b1220; 
+      color:#e8eefc; 
+    }
+    
+    .container { max-width: 1400px; margin: 0 auto; }
+    
+    h1 { font-size: 24px; margin: 0 0 20px; }
+    
+    .tabs { 
+      display: flex; 
+      gap: 8px; 
+      margin-bottom: 20px; 
+      border-bottom: 2px solid #223354;
+    }
+    
+    .tab-btn { 
+      background: transparent; 
+      border: none; 
+      color: #a9b7da; 
+      padding: 12px 16px; 
+      cursor: pointer; 
+      font-size: 14px;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+    
+    .tab-btn.active { 
+      color: #4cc9f0; 
+      border-bottom-color: #4cc9f0;
+    }
+    
+    .tab-btn:hover { 
+      color: #e8eefc; 
+    }
+    
+    .tab-content { 
+      display: none; 
+    }
+    
+    .tab-content.active { 
+      display: block; 
+    }
+    
+    .grid { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 16px; 
+    }
+    
+    .grid.full { 
+      grid-template-columns: 1fr; 
+    }
+    
+    .card { 
+      background:#111b2f; 
+      border:1px solid #223354; 
+      border-radius: 10px; 
+      padding: 16px; 
+    }
+    
+    .row { 
+      display: flex; 
+      gap: 14px; 
+      flex-wrap: wrap; 
+      align-items: center; 
+    }
+    
+    .metric { 
+      padding: 10px 12px; 
+      border-radius: 8px; 
+      background: #0f1a33; 
+      border: 1px solid #223354; 
+    }
+    
+    .metric .label { 
+      font-size: 12px; 
+      color: #a9b7da; 
+    }
+    
+    .metric .value { 
+      font-size: 20px; 
+      font-weight: 700; 
+    }
+    
+    #alerts { 
+      max-height: 240px; 
+      overflow: auto; 
+      font-size: 13px; 
+    }
+    
+    .alert-item { 
+      padding: 10px; 
+      border-bottom: 1px solid #223354; 
+    }
+    
+    .muted { 
+      color: #a9b7da; 
+    }
+    
+    button { 
+      background: #2756ff; 
+      border: none; 
+      color: white; 
+      padding: 10px 12px; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    button:hover { 
+      background: #1e41cc; 
+    }
+    
+    button.danger { 
+      background: #e63946; 
+    }
+    
+    button.danger:hover { 
+      background: #d62828; 
+    }
+    
+    button.secondary { 
+      background: #457b9d; 
+    }
+    
+    button.secondary:hover { 
+      background: #3a6487; 
+    }
+    
+    .form-group { 
+      margin-bottom: 12px; 
+    }
+    
+    label { 
+      display: block; 
+      margin-bottom: 4px; 
+      font-size: 13px; 
+      color: #a9b7da;
+      font-weight: bold;
+    }
+    
+    input, textarea, select { 
+      width: 100%; 
+      padding: 8px; 
+      border: 1px solid #223354; 
+      border-radius: 6px; 
+      background: #0f1a33; 
+      color: #e8eefc; 
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+    }
+    
+    textarea { 
+      resize: vertical; 
+      min-height: 80px; 
+    }
+    
+    .troubleshoot-item { 
+      background: #0f1a33; 
+      border: 1px solid #223354; 
+      border-radius: 8px; 
+      padding: 12px; 
+      margin-bottom: 12px;
+    }
+    
+    .troubleshoot-item .title { 
+      font-weight: bold; 
+      font-size: 15px; 
+      margin-bottom: 6px;
+    }
+    
+    .troubleshoot-item .meta { 
+      font-size: 12px; 
+      color: #a9b7da; 
+      margin-bottom: 8px;
+    }
+    
+    .troubleshoot-item .status-badge { 
+      display: inline-block; 
+      padding: 4px 8px; 
+      border-radius: 4px; 
+      font-size: 11px; 
+      margin-left: 8px;
+    }
+    
+    .status-badge.open { 
+      background: #f72585; 
+      color: white; 
+    }
+    
+    .status-badge.resolved { 
+      background: #06d6a0; 
+      color: #0b1220; 
+    }
+    
+    .troubleshoot-content { 
+      font-size: 13px; 
+      line-height: 1.5; 
+      margin-bottom: 10px;
+    }
+    
+    .troubleshoot-actions { 
+      display: flex; 
+      gap: 8px; 
+      margin-top: 10px;
+    }
+    
+    .troubleshoot-actions button { 
+      padding: 6px 10px; 
+      font-size: 12px;
+      flex: 0;
+    }
+    
+    .form-row { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 12px; 
+    }
+    
+    .modal { 
+      display: none; 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.8); 
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .modal.active { 
+      display: flex; 
+    }
+    
+    .modal-content { 
+      background: #111b2f; 
+      border: 1px solid #223354; 
+      border-radius: 10px; 
+      padding: 20px; 
+      max-width: 600px; 
+      width: 90%; 
+      max-height: 90vh; 
+      overflow-y: auto;
+    }
+    
+    .modal-header { 
+      font-size: 18px; 
+      font-weight: bold; 
+      margin-bottom: 16px; 
+      color: #4cc9f0;
+    }
+    
+    .modal-footer { 
+      display: flex; 
+      gap: 8px; 
+      justify-content: flex-end; 
+      margin-top: 16px; 
+    }
+    
+    .empty-state { 
+      text-align: center; 
+      padding: 30px; 
+      color: #a9b7da;
+    }
+
+    .device-item {
+      background: #0f1a33;
+      border: 1px solid #223354;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .device-field {
+      font-size: 13px;
+    }
+
+    .device-field .label {
+      color: #a9b7da;
+      font-size: 11px;
+      margin-bottom: 2px;
+    }
+
+    .device-field .value {
+      color: #e8eefc;
+      font-weight: 500;
+    }
+
+    .status-light {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+
+    .status-light.up {
+      background: #06d6a0;
+    }
+
+    .status-light.down {
+      background: #e63946;
+    }
+
+    .status-light.unknown {
+      background: #a9b7da;
+    }
+
+    .device-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .device-actions button {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .diagnostic-section {
+      font-size: 13px;
+    }
+
+    .diagnostic-section label {
+      color: #a9b7da;
+      margin-bottom: 8px;
+    }
+
+    .diagnostic-section pre {
+      color: #4cc9f0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Network Monitoring System</h1>
+    
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="monitoring">📊 Monitoring</button>
+      <button class="tab-btn" data-tab="devices">🖥️ Site Device</button>
+      <button class="tab-btn" data-tab="troubleshoot">🔧 Troubleshoot</button>
+    </div>
+
+    <!-- MONITORING TAB -->
+    <div id="monitoring" class="tab-content active">
+      <div class="row" style="margin-bottom: 14px;">
+        <div class="metric">
+          <div class="label">Realtime Bandwidth LAN</div>
+          <div class="value" id="lanTotalVal">0</div>
+          <div class="muted" style="margin-top:4px;font-size:12px;">RX <span style="color:#4cc9f0;font-weight:700;" id="lanRxVal">0</span> Mbps · TX <span style="color:#f72585;font-weight:700;" id="lanTxVal">0</span> Mbps</div>
+        </div>
+        <div class="metric">
+          <div class="label">RX Mbps (latest)</div>
+          <div class="value" id="rxVal">0</div>
+        </div>
+        <div class="metric">
+          <div class="label">TX Mbps (latest)</div>
+          <div class="value" id="txVal">0</div>
+        </div>
+        <div class="metric">
+          <div class="label">Total Mbps</div>
+          <div class="value" id="totalVal">0</div>
+        </div>
+        <div class="metric">
+          <div class="label">Devices Online</div>
+          <div class="value" id="devicesUpVal">0 / 0</div>
+        </div>
+        <div class="metric">
+          <div class="label">Last update</div>
+          <div class="value" id="tsVal">-</div>
+        </div>
+      </div>
+
+
+      <div class="grid">
+        <div class="card">
+          <div class="muted" style="margin-bottom: 10px;">Real-time bandwidth (Plotly)</div>
+          <div id="chart" style="height: 330px;"></div>
+        </div>
+        <div class="card">
+          <div class="muted" style="margin-bottom: 10px;">Devices UP (Realtime)</div>
+          <div id="devices-up-list" style="max-height: 165px; overflow:auto;"></div>
+          <div class="muted" style="margin-top: 10px;">Alerts (DB + memory)</div>
+          <div id="alerts" style="max-height: 160px; overflow:auto; margin-top: 8px;"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- DEVICES TAB -->
+    <div id="devices" class="tab-content">
+      <div class="grid full">
+        <div class="card">
+          <div class="row" style="margin-bottom: 16px;">
+            <h3 style="margin: 0; flex: 1;">Site Device Monitor</h3>
+            <button onclick="openAddDeviceModal()">+ Tambah Device</button>
+          </div>
+          <div id="devices-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TROUBLESHOOT TAB -->
+    <div id="troubleshoot" class="tab-content">
+      <div class="grid full">
+        <div class="card">
+          <div class="row" style="margin-bottom: 16px;">
+            <h3 style="margin: 0; flex: 1;">Daftar Troubleshoot</h3>
+            <button onclick="openAddTsModal()">+ Tambah</button>
+          </div>
+          <div id="troubleshoot-list"></div>
+        </div>
+      </div>
+      
+      <div class="grid full" style="margin-top: 20px;">
+        <div class="card">
+          <h3 style="margin: 0 0 16px;">Diagnostic Tools</h3>
+          <div class="diagnostic-section">
+            <label>IP Address / Host:</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="ping_ip" placeholder="192.168.1.1 atau example.com" style="flex: 1;">
+              <button onclick="executePing()" style="flex: 0; padding: 8px 16px;">Ping</button>
+              <button onclick="executeTracert()" style="flex: 0; padding: 8px 16px;">Tracert</button>
+            </div>
+            <div id="diagnostic-output" style="margin-top: 12px; display: none;">
+              <label>Output:</label>
+              <pre style="background: #0a0f1f; padding: 12px; border-radius: 6px; max-height: 300px; overflow: auto; font-size: 12px;" id="diagnostic-result"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT/TAMBAH TROUBLESHOOT -->
+  <div id="troubleshoot-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header" id="modal-title">Tambah Troubleshoot Baru</div>
+      <form id="troubleshoot-form">
+        <div class="form-group">
+          <label for="problem_title">Judul Problem *</label>
+          <input type="text" id="problem_title" name="problem_title" required placeholder="Misal: Server tidak merespon">
+        </div>
+
+        <div class="form-group">
+          <label for="problem_description">Deskripsi Masalah</label>
+          <textarea id="problem_description" name="problem_description" placeholder="Jelaskan detail masalahnya..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="solution">Solusi</label>
+          <textarea id="solution" name="solution" placeholder="Tuliskan solusinya..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="open">Open (Masih Berlangsung)</option>
+              <option value="resolved">Resolved (Terselesaikan)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="secondary" onclick="closeTsModal()">Batal</button>
+          <button type="submit">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DEVICE -->
+  <div id="device-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header" id="device-modal-title">Tambah Device Baru</div>
+      <form id="device-form">
+        <div class="form-group">
+          <label for="device_nama">Nama Device *</label>
+          <input type="text" id="device_nama" name="device_nama" required placeholder="Misal: Router Kantor">
+        </div>
+
+        <div class="form-group">
+          <label for="device_ip">IP Address *</label>
+          <input type="text" id="device_ip" name="device_ip" required placeholder="192.168.1.1">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="device_lokasi">Lokasi</label>
+            <input type="text" id="device_lokasi" name="device_lokasi" placeholder="Lantai 2, Ruang IT">
+          </div>
+
+          <div class="form-group">
+            <label for="device_mac">MAC Address</label>
+            <input type="text" id="device_mac" name="device_mac" placeholder="00:11:22:33:44:55">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="secondary" onclick="closeDeviceModal()">Batal</button>
+          <button type="submit">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script>
+  // ========== TAB SWITCHING ==========
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const tabName = e.target.dataset.tab;
+      
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Remove active from all buttons
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+      });
+      
+      // Show selected tab
+      document.getElementById(tabName).classList.add('active');
+      e.target.classList.add('active');
+      
+      // Load data if troubleshoot tab
+      if(tabName === 'troubleshoot') {
+        loadTroubleshootList();
+      }
+    });
+  });
+
+  // ========== MONITORING TAB ==========
+  const rxVal = document.getElementById('rxVal');
+  const txVal = document.getElementById('txVal');
+  const totalVal = document.getElementById('totalVal');
+  const devicesUpVal = document.getElementById('devicesUpVal');
+  const tsVal = document.getElementById('tsVal');
+
+  // Realtime Bandwidth LAN (new indicator)
+
+  const lanTotalVal = document.getElementById('lanTotalVal');
+  const lanRxVal = document.getElementById('lanRxVal');
+  const lanTxVal = document.getElementById('lanTxVal');
+
+  let lastSeries = {ts:[], rx:[], tx:[]};
+
+
+  function formatTs(ts){
+    try { return new Date(ts*1000).toLocaleTimeString(); } catch { return '-'; }
+  }
+
+  async function fetchLatest(){
+    try {
+      const r = await fetch('/api/latest');
+      const j = await r.json();
+      rxVal.textContent = j.rx_mbps.toFixed(2);
+      txVal.textContent = j.tx_mbps.toFixed(2);
+      totalVal.textContent = (j.rx_mbps + j.tx_mbps).toFixed(2);
+      tsVal.textContent = formatTs(j.ts);
+
+      // New indicator: Realtime Bandwidth LAN (top card)
+      lanRxVal.textContent = j.rx_mbps.toFixed(2);
+      lanTxVal.textContent = j.tx_mbps.toFixed(2);
+      lanTotalVal.textContent = (j.rx_mbps + j.tx_mbps).toFixed(2);
+
+    } catch(e) {
+      console.error('Error fetching latest:', e);
+    }
+  }
+
+  async function fetchTimeseries(){
+    try {
+      const r = await fetch('/api/timeseries');
+      const data = await r.json();
+
+      const ts = data.map(x => x.ts);
+      const rx = data.map(x => x.rx_mbps);
+      const tx = data.map(x => x.tx_mbps);
+
+      lastSeries = {ts, rx, tx};
+
+      const traceRx = {
+        x: ts.map(t => new Date(t*1000)),
+        y: rx,
+        name: 'RX Mbps',
+        mode: 'lines+markers',
+        line: {color:'#4cc9f0'}
+      };
+      const traceTx = {
+        x: ts.map(t => new Date(t*1000)),
+        y: tx,
+        name: 'TX Mbps',
+        mode: 'lines+markers',
+        line: {color:'#f72585'}
+      };
+
+      const layout = {
+        paper_bgcolor: '#111b2f',
+        plot_bgcolor: '#111b2f',
+        font: {color:'#e8eefc'},
+        margin: {l:50,r:10,t:20,b:40},
+        xaxis: {title: 'Time', gridcolor:'#223354', zerolinecolor:'#223354'},
+        yaxis: {title: 'Mbps', gridcolor:'#223354', zerolinecolor:'#223354'},
+        legend: {orientation:'h', x:0, y:1.2}
+      };
+
+      Plotly.newPlot('chart', [traceRx, traceTx], layout, {displayModeBar:false});
+    } catch(e) {
+      console.error('Error fetching timeseries:', e);
+    }
+  }
+
+  async function fetchAlerts(){
+    try {
+      const r = await fetch('/api/alerts');
+      const j = await r.json();
+
+      const items = j.items || [];
+      const box = document.getElementById('alerts');
+      if(items.length === 0){
+        box.innerHTML = '<div class="alert-item muted">Belum ada alert.</div>';
+        return;
+      }
+
+      box.innerHTML = items.map(it => {
+        const ts = new Date(it.ts*1000).toLocaleTimeString();
+        return `
+          <div class="alert-item">
+            <div><b>Alert</b> @ ${ts}</div>
+            <div class="muted">Bandwidth: ${Number(it.bandwidth_mbps).toFixed(2)} Mbps</div>
+            <div class="muted">Threshold: ${Number(it.threshold_mbps).toFixed(2)} Mbps</div>
+            <div class="muted">Interface: ${it.interface || '-'}</div>
+            <div>${it.note || ''}</div>
+          </div>
+        `;
+      }).join('');
+    } catch(e) {
+      console.error('Error fetching alerts:', e);
+    }
+  }
+
+      function formatDate(ts){
+        try { return ts ? new Date(ts*1000).toLocaleTimeString() : '-'; } catch { return '-'; }
+      }
+
+      async function fetchDeviceSummary() {
+        try {
+          const r = await fetch('/api/devices/summary');
+          const j = await r.json();
+
+          const total = j.total ?? 0;
+          const upCount = j.up ?? 0;
+          devicesUpVal.textContent = `${upCount} / ${total}`;
+
+          const box = document.getElementById('devices-up-list');
+          const upItems = j.up_items || [];
+          if(upItems.length === 0){
+            box.innerHTML = '<div class="muted">Tidak ada device UP.</div>';
+            return;
+          }
+
+          box.innerHTML = upItems.map(d => {
+            const lc = d.last_check;
+            return `
+              <div class="alert-item" style="border-bottom:1px solid #223354;">
+                <div><b>${d.nama}</b> <span class="muted">(${d.ip})</span></div>
+                <div class="muted">Lokasi: ${d.lokasi || '-'}</div>
+                <div class="muted">Last check: ${formatDate(lc)}</div>
+              </div>
+            `;
+          }).join('');
+        } catch(e) {
+          console.error('Error fetching device summary:', e);
+        }
+      }
+
+
+  async function tick(){
+    await Promise.all([fetchLatest(), fetchTimeseries(), fetchAlerts(), fetchDeviceSummary()]);
+  }
+
+  tick();
+  setInterval(tick, 1500);
+
+
+
+
+  // ========== TROUBLESHOOT TAB ==========
+  let currentEditId = null;
+
+  function formatDate(ts) {
+    try { 
+      return new Date(ts*1000).toLocaleString('id-ID'); 
+    } catch { 
+      return '-'; 
+    }
+  }
+
+  async function loadTroubleshootList() {
+    try {
+      const r = await fetch('/api/troubleshoot');
+      const data = await r.json();
+      const items = data.items || [];
+      
+      const container = document.getElementById('troubleshoot-list');
+      
+      if(items.length === 0) {
+        container.innerHTML = '<div class="empty-state">Belum ada troubleshoot. <br><button onclick="openAddModal()" style="margin-top: 10px;">Buat yang pertama</button></div>';
+        return;
+      }
+      
+      container.innerHTML = items.map(item => {
+        const statusClass = item.status === 'open' ? 'open' : 'resolved';
+        return `
+          <div class="troubleshoot-item">
+            <div class="title">
+              ${item.problem_title}
+              <span class="status-badge ${statusClass}">${item.status.toUpperCase()}</span>
+            </div>
+            <div class="meta">Dibuat: ${formatDate(item.created_at)}</div>
+            ${item.problem_description ? `<div class="troubleshoot-content"><b>Masalah:</b><br>${item.problem_description}</div>` : ''}
+            ${item.solution ? `<div class="troubleshoot-content"><b>Solusi:</b><br>${item.solution}</div>` : ''}
+            <div class="troubleshoot-actions">
+              <button onclick="openEditModal(${item.id})" class="secondary">Edit</button>
+              <button onclick="deleteTroubleshoot(${item.id})" class="danger">Hapus</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch(e) {
+      console.error('Error loading troubleshoot list:', e);
+      document.getElementById('troubleshoot-list').innerHTML = '<div class="empty-state">Error loading data</div>';
+    }
+  }
+
+  function openAddModal() {
+    currentEditId = null;
+    document.getElementById('modal-title').textContent = 'Tambah Troubleshoot Baru';
+    document.getElementById('troubleshoot-form').reset();
+    document.getElementById('troubleshoot-modal').classList.add('active');
+  }
+
+  function openAddTsModal() {
+    openAddModal();
+  }
+
+  async function openEditModal(id) {
+    try {
+      const r = await fetch(`/api/troubleshoot/${id}`);
+      const item = await r.json();
+      
+      currentEditId = id;
+      document.getElementById('modal-title').textContent = 'Edit Troubleshoot';
+      document.getElementById('problem_title').value = item.problem_title || '';
+      document.getElementById('problem_description').value = item.problem_description || '';
+      document.getElementById('solution').value = item.solution || '';
+      document.getElementById('status').value = item.status || 'open';
+      document.getElementById('troubleshoot-modal').classList.add('active');
+    } catch(e) {
+      alert('Error loading item: ' + e.message);
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('troubleshoot-modal').classList.remove('active');
+    currentEditId = null;
+  }
+
+  function closeTsModal() {
+    closeModal();
+  }
+
+  document.getElementById('troubleshoot-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const data = {
+      problem_title: document.getElementById('problem_title').value,
+      problem_description: document.getElementById('problem_description').value,
+      solution: document.getElementById('solution').value,
+      status: document.getElementById('status').value,
+    };
+    
+    try {
+      let url = '/api/troubleshoot';
+      let method = 'POST';
+      
+      if(currentEditId) {
+        url = `/api/troubleshoot/${currentEditId}`;
+        method = 'PUT';
+      }
+      
+      const r = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await r.json();
+      
+      if(result.success) {
+        closeModal();
+        loadTroubleshootList();
+        alert(currentEditId ? 'Troubleshoot berhasil diupdate!' : 'Troubleshoot berhasil ditambahkan!');
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch(e) {
+      alert('Error: ' + e.message);
+    }
+  });
+
+  async function deleteTroubleshoot(id) {
+    if(!confirm('Yakin ingin menghapus item ini?')) return;
+    
+    try {
+      const r = await fetch(`/api/troubleshoot/${id}`, {
+        method: 'DELETE'
+      });
+      
+      const result = await r.json();
+      
+      if(result.success) {
+        loadTroubleshootList();
+        alert('Troubleshoot berhasil dihapus!');
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch(e) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  // Close modal when clicking outside
+  document.getElementById('troubleshoot-modal').addEventListener('click', (e) => {
+    if(e.target.id === 'troubleshoot-modal') {
+      closeModal();
+    }
+  });
+
+  // ========== DEVICE TAB ==========
+  let currentDeviceEditId = null;
+
+  async function loadDeviceList() {
+    try {
+      const r = await fetch('/api/devices');
+      const data = await r.json();
+      const items = data.items || [];
+      
+      const container = document.getElementById('devices-list');
+      
+      if(items.length === 0) {
+        container.innerHTML = '<div class="empty-state">Belum ada device. <br><button onclick="openAddDeviceModal()" style="margin-top: 10px;">Tambah device pertama</button></div>';
+        return;
+      }
+      
+      container.innerHTML = items.map(item => {
+        const statusClass = item.status.toLowerCase();
+        const statusLight = `<span class="status-light ${statusClass}"></span>`;
+        return `
+          <div class="device-item">
+            <div class="device-field">
+              <div class="label">NAMA</div>
+              <div class="value">${item.nama}</div>
+            </div>
+            <div class="device-field">
+              <div class="label">LOKASI</div>
+              <div class="value">${item.lokasi || '-'}</div>
+            </div>
+            <div class="device-field">
+              <div class="label">IP ADDRESS</div>
+              <div class="value">${item.ip}</div>
+            </div>
+            <div class="device-field">
+              <div class="label">STATUS</div>
+              <div class="value">${statusLight} ${item.status}</div>
+            </div>
+            <div class="device-actions">
+              <button onclick="pingDevice(${item.id}, '${item.ip}')" class="secondary">Ping</button>
+              <button onclick="openEditDeviceModal(${item.id})" class="secondary">Edit</button>
+              <button onclick="deleteDevice(${item.id})" class="danger">Hapus</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch(e) {
+      console.error('Error loading devices:', e);
+      document.getElementById('devices-list').innerHTML = '<div class="empty-state">Error loading data</div>';
+    }
+  }
+
+  function openAddDeviceModal() {
+    currentDeviceEditId = null;
+    document.getElementById('device-modal-title').textContent = 'Tambah Device Baru';
+    document.getElementById('device-form').reset();
+    document.getElementById('device-modal').classList.add('active');
+  }
+
+  async function openEditDeviceModal(id) {
+    try {
+      const r = await fetch(`/api/devices/${id}`);
+      const item = await r.json();
+      
+      currentDeviceEditId = id;
+      document.getElementById('device-modal-title').textContent = 'Edit Device';
+      document.getElementById('device_nama').value = item.nama || '';
+      document.getElementById('device_ip').value = item.ip || '';
+      document.getElementById('device_lokasi').value = item.lokasi || '';
+      document.getElementById('device_mac').value = item.mac || '';
+      document.getElementById('device-modal').classList.add('active');
+    } catch(e) {
+      alert('Error loading device: ' + e.message);
+    }
+  }
+
+  function closeDeviceModal() {
+    document.getElementById('device-modal').classList.remove('active');
+    currentDeviceEditId = null;
+  }
+
+  document.getElementById('device-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const data = {
+      nama: document.getElementById('device_nama').value,
+      ip: document.getElementById('device_ip').value,
+      lokasi: document.getElementById('device_lokasi').value,
+      mac: document.getElementById('device_mac').value,
+    };
+    
+    try {
+      let url = '/api/devices';
+      let method = 'POST';
+      
+      if(currentDeviceEditId) {
+        url = `/api/devices/${currentDeviceEditId}`;
+        method = 'PUT';
+      }
+      
+      const r = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await r.json();
+      
+      if(result.success) {
+        closeDeviceModal();
+        loadDeviceList();
+        alert(currentDeviceEditId ? 'Device berhasil diupdate!' : 'Device berhasil ditambahkan!');
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch(e) {
+      alert('Error: ' + e.message);
+    }
+  });
+
+  async function deleteDevice(id) {
+    if(!confirm('Yakin ingin menghapus device ini?')) return;
+    
+    try {
+      const r = await fetch(`/api/devices/${id}`, {
+        method: 'DELETE'
+      });
+      
+      const result = await r.json();
+      
+      if(result.success) {
+        loadDeviceList();
+        alert('Device berhasil dihapus!');
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch(e) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  async function pingDevice(id, ip) {
+    try {
+      const r = await fetch(`/api/devices/ping/${ip}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({device_id: id})
+      });
+      
+      const result = await r.json();
+      const status = result.success ? 'UP ✓' : 'DOWN ✗';
+      alert(`Ping ke ${ip}: ${status}\n\n${result.output || result.error || ''}`);
+      loadDeviceList();
+    } catch(e) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  // ========== DIAGNOSTIC TOOLS ==========
+  async function executePing() {
+    const ip = document.getElementById('ping_ip').value;
+    if(!ip) {
+      alert('Masukkan IP address atau hostname');
+      return;
+    }
+    
+    const output = document.getElementById('diagnostic-output');
+    const result = document.getElementById('diagnostic-result');
+    
+    result.textContent = 'Executing ping...';
+    output.style.display = 'block';
+    
+    try {
+      const r = await fetch(`/api/devices/ping/${ip}`, {method: 'POST'});
+      const data = await r.json();
+      result.textContent = data.output || data.error || 'No output';
+    } catch(e) {
+      result.textContent = 'Error: ' + e.message;
+    }
+  }
+
+  async function executeTracert() {
+    const ip = document.getElementById('ping_ip').value;
+    if(!ip) {
+      alert('Masukkan IP address atau hostname');
+      return;
+    }
+    
+    const output = document.getElementById('diagnostic-output');
+    const result = document.getElementById('diagnostic-result');
+    
+    result.textContent = 'Executing tracert...';
+    output.style.display = 'block';
+    
+    try {
+      const r = await fetch(`/api/devices/tracert/${ip}`, {method: 'POST'});
+      const data = await r.json();
+      result.textContent = data.output || data.error || 'No output';
+    } catch(e) {
+      result.textContent = 'Error: ' + e.message;
+    }
+  }
+
+  // Close device modal when clicking outside
+  document.getElementById('device-modal').addEventListener('click', (e) => {
+    if(e.target.id === 'device-modal') {
+      closeDeviceModal();
+    }
+  });
+
+  // Load devices when tab is clicked
+  document.querySelector('button[data-tab="devices"]').addEventListener('click', () => {
+    loadDeviceList();
+  });
+</script>
+</body>
+</html>
