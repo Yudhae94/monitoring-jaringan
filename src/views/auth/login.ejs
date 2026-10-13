@@ -1,0 +1,145 @@
+<div class="auth-wrapper">
+  <div class="auth-card">
+
+    <!-- ============ Panel kiri: identitas kompleks ============ -->
+    <aside class="auth-brand">
+      <div class="auth-brand-top">
+        <div class="auth-logo">🏙️</div>
+        <p class="auth-brand-tag">Portal Resident &amp; MANAGEMENT</p>
+      </div>
+
+      <div class="auth-brand-body">
+        <h2 class="auth-brand-name"><%= rt.nama %></h2>
+        <p class="auth-brand-desc">
+          Sistem Informasi Manajemen Warga &amp; Kepemimpinan
+        </p>
+      </div>
+
+      <ul class="auth-features">
+        <li><span class="feat-icon">👥</span> Data warga &amp; kartu keluarga</li>
+        <li><span class="feat-icon">💰</span> Iuran &amp; bookkeeping kas</li>
+        <li><span class="feat-icon">📄</span> Surat &amp; pengumuman</li>
+      </ul>
+
+      <p class="auth-brand-foot">
+        Kel. <%= rt.kelurahan %> · Kec. <%= rt.kecamatan %><br>
+        <%= rt.kota %>, <%= rt.provinsi %> · <%= app.name %>
+      </p>
+    </aside>
+
+    <!-- ============ Panel kanan: form masuk ============ -->
+    <main class="auth-main">
+      <div class="auth-theme-row">
+        <button class="btn-icon theme-toggle" id="themeToggle" type="button"
+                title="Ganti mode terang / gelap" aria-label="Ganti mode terang / gelap">
+          <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+        </button>
+      </div>
+
+      <div class="auth-head">
+        <h1>Masuk ke Dashboard</h1>
+        <p>Silakan masukkan email dan password Anda.</p>
+      </div>
+
+      <% if (flash.error) { %>
+        <div class="alert alert-danger">
+          <span class="alert-icon">!</span>
+          <span><%= flash.error %></span>
+        </div>
+      <% } %>
+      <% if (flash.success) { %>
+        <div class="alert alert-success">
+          <span class="alert-icon">✓</span>
+          <span><%= flash.success %></span>
+        </div>
+      <% } %>
+
+      <form action="/login" method="POST" class="auth-form" autocomplete="on" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="redirect" value="<%= redirect %>">
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <div class="input-icon-wrap">
+            <span class="input-icon" aria-hidden="true">✉️</span>
+            <input type="email"
+                   id="email"
+                   name="email"
+                   class="form-control"
+                   placeholder="nama@email.com"
+                   value="<%= old.email %>"
+                   required
+                   autofocus
+                   autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-icon-wrap">
+            <span class="input-icon" aria-hidden="true">🔒</span>
+            <input type="password"
+                   id="password"
+                   name="password"
+                   class="form-control"
+                   placeholder="Masukkan password"
+                   required
+                   autocomplete="current-password"
+                   aria-describedby="capsHint">
+            <button type="button" class="input-suffix" id="togglePassword" title="Tampilkan password" aria-label="Tampilkan password">👁️</button>
+          </div>
+          <small class="auth-caps-hint" id="capsHint" hidden>⚠️ Caps Lock aktif</small>
+        </div>
+
+        <div class="auth-options">
+          <label class="auth-check">
+            <input type="checkbox" name="remember" value="1">
+            <span>Ingat saya</span>
+          </label>
+          <span class="auth-hint">Hubungi sekretaris bila lupa password</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginSubmit">
+          Masuk
+        </button>
+
+        <div class="daftar-box" id="daftarBox">
+          <button type="button" class="daftar-toggle" id="daftarToggle" aria-expanded="false" aria-controls="daftarPanel">
+            <span>Belum punya akun?</span>
+            <strong>Daftar sebagai warga baru</strong>
+            <span class="daftar-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="daftar-panel" id="daftarPanel" hidden>
+            <p>
+              Isi formulir pendaftaran, data Anda akan diverifikasi admin
+              sebelum akun diaktifkan.
+            </p>
+            <a href="/daftar" class="btn btn-ghost btn-block">Buka Formulir Pendaftaran</a>
+          </div>
+        </div>
+      </form>
+
+      <div class="auth-demo">
+        <div class="auth-demo-title">Akun Demo — klik untuk mengisi otomatis</div>
+        <div class="auth-demo-grid">
+          <button type="button" class="demo-chip" data-email="admin@simrt.local" data-password="admin123">
+            <span class="demo-role">Admin</span>
+            <span class="demo-mail">admin@simrt.local</span>
+          </button>
+          <button type="button" class="demo-chip" data-email="bendahara@simrt.local" data-password="bendahara123">
+            <span class="demo-role">Bendahara</span>
+            <span class="demo-mail">bendahara@simrt.local</span>
+          </button>
+          <button type="button" class="demo-chip" data-email="warga@simrt.local" data-password="warga123">
+            <span class="demo-role">Warga</span>
+            <span class="demo-mail">warga@simrt.local</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="auth-footer">
+        &copy; <%= new Date().getFullYear() %> <%= app.name %> — <%= rt.nama %>
+      </div>
+    </main>
+  </div>
+</div>

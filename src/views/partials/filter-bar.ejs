@@ -1,0 +1,43 @@
+<%
+/**
+ * Partial filter bar.
+ * Parameter:
+ *   - action : URL tujuan form GET
+ *   - fields : array { name, label, type, options, value, placeholder }
+ *   - resetUrl
+ */
+  const fAction = typeof action !== 'undefined' ? action : currentPath;
+  const fFields = typeof fields !== 'undefined' ? fields : [];
+  const fReset = typeof resetUrl !== 'undefined' ? resetUrl : currentPath;
+%>
+
+<form class="filter-bar" method="GET" action="<%= fAction %>">
+  <% fFields.forEach(function(f){ %>
+    <% if (f.type === 'select') { %>
+      <div class="filter-group">
+        <label for="f-<%= f.name %>"><%= f.label %></label>
+        <select name="<%= f.name %>" id="f-<%= f.name %>" class="form-control form-control-sm">
+          <option value=""><%= f.placeholder || 'Semua' %></option>
+          <% (f.options || []).forEach(function(o){ %>
+            <option value="<%= o.value %>" <%= String(f.value) === String(o.value) ? 'selected' : '' %>><%= o.label %></option>
+          <% }); %>
+        </select>
+      </div>
+    <% } else { %>
+      <div class="filter-group <%= f.type === 'search' ? 'filter-search' : '' %>">
+        <label for="f-<%= f.name %>"><%= f.label %></label>
+        <input type="<%= f.type || 'text' %>"
+               name="<%= f.name %>"
+               id="f-<%= f.name %>"
+               class="form-control form-control-sm"
+               value="<%= f.value || '' %>"
+               placeholder="<%= f.placeholder || '' %>">
+      </div>
+    <% } %>
+  <% }); %>
+
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary btn-sm">🔍 Terapkan</button>
+    <a href="<%= fReset %>" class="btn btn-ghost btn-sm">Reset</a>
+  </div>
+</form>

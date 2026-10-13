@@ -1,0 +1,55 @@
+<div class="page-head">
+  <div>
+    <h2><%= warga.nama %></h2>
+    <p class="page-desc">NIK <code class="code"><%= warga.nik %></code></p>
+  </div>
+  <div class="page-actions">
+    <% if (currentUser.role === 'admin') { %>
+      <a href="/warga/<%= warga.id %>/edit" class="btn btn-ghost">✏️ Edit</a>
+    <% } %>
+    <a href="/kartu-keluarga/<%= warga.kk_id %>" class="btn btn-ghost">🏠 Lihat KK</a>
+    <a href="/warga" class="btn btn-ghost">← Kembali</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><h3>👤 Data Pribadi</h3></div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Nama Lengkap</dt><dd><strong><%= warga.nama %></strong></dd>
+        <dt>NIK</dt><dd><code class="code"><%= warga.nik %></code></dd>
+        <dt>Jenis Kelamin</dt><dd><%= labels.JK[warga.jenis_kelamin] %></dd>
+        <dt>Tempat, Tanggal Lahir</dt>
+        <dd><%= warga.tempat_lahir || '-' %>, <%= warga.tanggal_lahir ? fmt.tanggalID(warga.tanggal_lahir, { long: true }) : '-' %></dd>
+        <dt>Agama</dt><dd><%= warga.agama || '-' %></dd>
+        <dt>Status Perkawinan</dt><dd><%= labels.STATUS_KAWIN[warga.status_perkawinan] || '-' %></dd>
+        <dt>Pendidikan</dt><dd><%= warga.pendidikan || '-' %></dd>
+        <dt>Pekerjaan</dt><dd><%= warga.pekerjaan || '-' %></dd>
+        <dt>Kewarganegaraan</dt><dd><%= warga.kewarganegaraan %></dd>
+        <dt>Nomor HP</dt><dd><%= warga.no_hp || '-' %></dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>🏠 Informasi Keluarga</h3></div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Status dalam Keluarga</dt>
+        <dd><span class="badge badge-info"><%= labels.STATUS_KELUARGA[warga.status_keluarga] || warga.status_keluarga %></span></dd>
+        <dt>Kepala Keluarga</dt><dd><%= warga.kepala_keluarga %></dd>
+        <dt>Nomor KK</dt><dd><code class="code"><%= warga.no_kk %></code></dd>
+        <dt>Alamat</dt><dd><%= warga.alamat %></dd>
+        <dt>Nomor Rumah</dt><dd><%= warga.no_rumah || '-' %></dd>
+        <dt>Terdaftar Sejak</dt><dd><%= fmt.tanggalID(warga.created_at) %></dd>
+        <dt>Terakhir Diperbarui</dt><dd><%= fmt.tanggalWaktu(warga.updated_at) %></dd>
+      </dl>
+
+      <div class="info-box mt-3">
+        <strong>ℹ️ Catatan:</strong>
+        Data ini dipakai sebagai rujukan saat pengajuan surat dan penagihan iuran.
+      </div>
+    </div>
+  </div>
+</div>

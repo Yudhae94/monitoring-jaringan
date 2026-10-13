@@ -1,0 +1,31 @@
+<%
+/**
+ * Partial modal konfirmasi hapus generik.
+ * Parameter: id (unik), title, message, action (URL), csrfToken
+ */
+  const mId = typeof id !== 'undefined' ? id : 'confirmModal';
+  const mTitle = typeof title !== 'undefined' ? title : 'Konfirmasi Hapus';
+  const mMessage = typeof message !== 'undefined' ? message : 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?';
+  const mAction = typeof action !== 'undefined' ? action : '#';
+  const mMethod = typeof method !== 'undefined' ? method : 'DELETE';
+%>
+
+<div class="modal-overlay" id="<%= mId %>" hidden>
+  <div class="modal-box">
+    <div class="modal-header modal-header-danger">
+      <h3><%= mTitle %></h3>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <div class="modal-body">
+      <p><%= mMessage %></p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" data-modal-close>Batal</button>
+      <form method="POST" action="<%= mAction %>" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="_method" value="<%= mMethod %>">
+        <button type="submit" class="btn btn-danger">Ya, Hapus</button>
+      </form>
+    </div>
+  </div>
+</div>

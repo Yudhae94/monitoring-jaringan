@@ -1,0 +1,163 @@
+<%
+  const statusBadge = { menunggu: 'warning', disetujui: 'success', ditolak: 'danger' };
+  const statusLabel  = { menunggu: 'Menunggu', disetujui: 'Disetujui', ditolak: 'Ditolak' };
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Pendaftaran Warga Baru</h2>
+    <p class="page-desc">Verifikasi &amp; setujui akun warga yang mendaftar mandiri.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/daftar" class="btn btn-ghost" target="_blank">📄 Lihat Form Daftar</a>
+  </div>
+</div>
+
+<%- include('../partials/stat-card', {
+  cards: [
+    { label: 'Menunggu Verifikasi', value: stats.menunggu, icon: '⏳', tone: 'warning' },
+    { label: 'Sudah Disetujui',    value: stats.disetujui, icon: '✅', tone: 'success' },
+    { label: 'Ditolak',           value: stats.ditolak,    icon: '❌', tone: 'danger' },
+    { label: 'Total Pendaftaran',  value: stats.menunggu + stats.disetujui + stats.ditolak, icon: '📋', tone: 'primary' }
+  ]
+}) %>
+
+<form class="filter-bar" method="GET" action="/pendaftaran">
+  <div class="filter-group filter-search">
+    <label for="f-q">Cari</label>
+    <input type="search" name="q" id="f-q" class="form-control form-control-sm"
+           value="<%= filters.q %>" placeholder="Nama, email, atau NIK…">
+  </div>
+
+  <div class="filter-group">
+    <label for="f-status">Status</label>
+    <select name="status" id="f-status" class="form-control form-control-sm">
+      <option value="">Semua status</option>
+      <option value="menunggu"  <%= filters.status === 'menunggu'  ? 'selected' : '' %>>Menunggu</option>
+      <option value="disetujui" <%= filters.status === 'disetujui' ? 'selected' : '' %>>Disetujui</option>
+      <option value="ditolak"   <%= filters.status === 'ditolak'   ? 'selected' : '' %>>Ditolak</option>
+    </select>
+  </div>
+
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary btn-sm">🔍 Terapkan</button>
+    <a href="/pendaftaran" class="btn btn-ghost btn-sm">Reset</a>
+  </div>
+</form>
+
+<div class="card">
+  <div class="card-body no-pad">
+    <% if (data.length === 0) { %>
+      <%- include('../partials/empty-state', {
+        emptyIcon: '📭',
+        emptyTitle: 'Belum ada pendaftaran',
+        emptyMessage: 'Pendaftaran warga baru yang dikirim akan muncul di sini.',
+        emptyUrl: '/daftar',
+        emptyAction: 'Buka Form Pendaftaran'
+      }) %>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Pemohon</th>
+              <th>NIK</th>
+              <th>Kontak</th>
+              <th>Alamat</th>
+              <th>Tanggal Daftar</th>
+              <th>Status</th>
+              <th class="text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% data.forEach(function(p){ %>
+              <tr>
+                <td>
+                  <div class="cell-user">
+                    <span class="mini-avatar"><%= p.nama.charAt(0).toUpperCase() %></span>
+                    <div>
+                      <strong><%= p.nama %></strong>
+                      <small class="cell-sub"><%= p.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan' %></small>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="code"><%= p.nik %></span></td>
+                <td>
+                  <div><%= p.email %></div>
+                  <% if (p.no_hp) { %><small class="cell-sub"><%= p.no_hp %></small><% } %>
+                </td>
+                <td>
+                  <div><%= p.alamat %></div>
+                  <% if (p.kk_id) { %>
+                    <small class="cell-sub">KK: <%= p.no_kk || '-' %></small>
+                  <% } else { %>
+                    <small class="cell-sub text-muted">Belum tertaut KK</small>
+                  <% } %>
+                </td>
+                <td class="text-muted"><%= fmt.tanggalWaktu(p.created_at) %></td>
+                <td>
+                  <span class="badge badge-<%= statusBadge[p.status] %>"><%= statusLabel[p.status] %></span>
+                  <% if (p.status !== 'menunggu' && p.admin_nama) { %>
+                    <small class="cell-sub">oleh <%= p.admin_nama %></small>
+                  <% } %>
+                </td>
+                <td class="text-right">
+                  <div class="action-group">
+                    <a href="/pendaftaran/<%= p.id %>" class="btn btn-ghost btn-xs" title="Lihat detail">👁️</a>
+
+                    <% if (p.status === 'menunggu') { %>
+                      <form method="POST" action="/pendaftaran/<%= p.id %>/approve" class="inline-form">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button type="submit" class="btn btn-success btn-xs" title="Setujui">✅</button>
+                      </form>
+
+                      <button type="button" class="btn btn-danger btn-xs" title="Tolak"
+                              data-reject-form="/pendaftaran/<%= p.id %>/reject"
+                              data-reject-name="<%= p.nama %>">❌</button>
+                    <% } else { %>
+                      <form method="POST" action="/pendaftaran/<%= p.id %>/delete" class="inline-form"
+                            onsubmit="return confirm('Hapus riwayat pendaftaran ini?')">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button type="submit" class="btn btn-ghost btn-xs" title="Hapus riwayat">🗑️</button>
+                      </form>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/pagination', { pagination, baseUrl: '/pendaftaran' }) %>
+
+<!-- Modal tolak: alasan wajib diisi -->
+<div class="modal-overlay" id="rejectModal" hidden>
+  <div class="modal-box">
+    <div class="modal-header modal-header-danger">
+      <h3>Tolak Pendaftaran</h3>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="#" id="rejectForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="modal-body">
+        <p class="modal-lead">
+          Tolak pendaftaran <strong id="rejectName"></strong>?
+          Akun tidak akan dibuat. Pendaftar dapat mendaftar ulang setelah memperbaiki data.
+        </p>
+        <div class="form-group" style="margin-bottom:0">
+          <label for="alasan">Alasan Penolakan <span class="req">*</span></label>
+          <textarea id="alasan" name="alasan" rows="3" class="form-control"
+                    placeholder="Contoh: NIK tidak terdaftar di lingkungan ini" required></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-modal-close>Batal</button>
+        <button type="submit" class="btn btn-danger">Ya, Tolak</button>
+      </div>
+    </form>
+  </div>
+</div>

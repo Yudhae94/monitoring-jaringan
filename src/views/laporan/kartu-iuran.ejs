@@ -1,0 +1,174 @@
+<div class="page-head">
+  <div>
+    <h2>Kartu Iuran Warga</h2>
+    <p class="page-desc">Matriks riwayat pembayaran iuran per kartu keluarga selama setahun.</p>
+  </div>
+  <div class="page-actions">
+    <% if (kartu) { %>
+      <a href="#" onclick="window.print()" class="btn btn-primary">🖨️ Cetak</a>
+    <% } %>
+    <a href="/laporan" class="btn btn-ghost">← Laporan</a>
+  </div>
+</div>
+
+<form class="filter-bar" method="GET" action="/laporan/kartu-iuran">
+  <div class="filter-group filter-search">
+    <label for="f-kk_id">Kartu Keluarga</label>
+    <select name="kk_id" id="f-kk_id" class="form-control form-control-sm" required>
+      <option value="">— Pilih Kartu Keluarga —</option>
+      <% kkOptions.forEach(function(k){ %>
+        <option value="<%= k.id %>" <%= String(filters.kk_id) === String(k.id) ? 'selected' : '' %>>
+          <%= k.kepala_keluarga %> — KK <%= k.no_kk %> (No. <%= k.no_rumah || '-' %>)
+        </option>
+      <% }); %>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label for="f-tahun">Tahun</label>
+    <select name="tahun" id="f-tahun" class="form-control form-control-sm">
+      <% tahunOptions.forEach(function(t){ %>
+        <option value="<%= t %>" <%= Number(filters.tahun) === t ? 'selected' : '' %>><%= t %></option>
+      <% }); %>
+    </select>
+  </div>
+
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary btn-sm">🔍 Tampilkan</button>
+    <a href="/laporan/kartu-iuran" class="btn btn-ghost btn-sm">Reset</a>
+  </div>
+</form>
+
+<% if (!kartu) { %>
+  <div class="card">
+    <div class="card-body">
+      <%- include('../partials/empty-state', {
+        emptyIcon: '🗂️',
+        emptyTitle: 'Pilih kartu keluarga',
+        emptyMessage: 'Pilih kartu keluarga dan tahun untuk menampilkan kartu iuran.'
+      }) %>
+    </div>
+  </div>
+<% } else { %>
+
+  <!-- Header kartu -->
+  <div class="card kartu-header">
+    <div class="card-body">
+      <div class="kartu-ident">
+        <div>
+          <h3><%= kartu.kk.kepala_keluarga %></h3>
+          <p class="text-muted">
+            KK <code class="code"><%= kartu.kk.no_kk %></code> ·
+            No. Rumah <%= kartu.kk.no_rumah || '-' %> ·
+            <%= kartu.kk.alamat %>
+          </p>
+        </div>
+        <div class="kartu-tahun">Tahun <%= kartu.tahun %></div>
+      </div>
+
+      <div class="kartu-summary">
+        <div class="kartu-sum-item">
+          <span class="kartu-sum-label">Total Tagihan</span>
+          <span class="kartu-sum-value"><%= fmt.rupiah(kartu.totalNominal) %></span>
+        </div>
+        <div class="kartu-sum-item">
+          <span class="kartu-sum-label">Total Terbayar</span>
+          <span class="kartu-sum-value text-success"><%= fmt.rupiah(kartu.totalTerbayar) %></span>
+        </div>
+        <div class="kartu-sum-item">
+          <span class="kartu-sum-label">Tunggakan</span>
+          <span class="kartu-sum-value <%= kartu.tunggakan > 0 ? 'text-danger' : 'text-success' %>">
+            <%= fmt.rupiah(kartu.tunggakan) %>
+          </span>
+        </div>
+        <div class="kartu-sum-item">
+          <span class="kartu-sum-label">Kepatuhan</span>
+          <span class="kartu-sum-value text-primary">
+            <%= kartu.totalNominal > 0 ? Math.round((kartu.totalTerbayar / kartu.totalNominal) * 100) : 0 %>%
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Matriks -->
+  <div class="card">
+    <div class="card-header">
+      <h3>🗂️ Matriks Pembayaran</h3>
+      <div class="chart-legend">
+        <span class="legend-item"><i class="dot dot-success"></i> Lunas</span>
+        <span class="legend-item"><i class="dot dot-warning"></i> Sebagian</span>
+        <span class="legend-item"><i class="dot dot-danger"></i> Belum Bayar</span>
+        <span class="legend-item"><i class="dot dot-neutral"></i> Tidak ada tagihan</span>
+      </div>
+    </div>
+    <div class="card-body no-pad">
+      <% if (kartu.jenis.length === 0) { %>
+        <div class="empty-mini">Tidak ada tagihan pada tahun ini.</div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-matrix">
+            <thead>
+              <tr>
+                <th>Bulan</th>
+                <% kartu.jenis.forEach(function(j){ %>
+                  <th class="text-center"><%= j.nama %></th>
+                <% }); %>
+                <th class="text-right">Total Bulan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% kartu.matriks.forEach(function(row, idx){ %>
+                <%
+                  var totalBulan = 0;
+                  kartu.jenis.forEach(function(j){
+                    if (row[j.id]) totalBulan += row[j.id].terbayar;
+                  });
+                %>
+                <tr>
+                  <td><strong><%= fmt.namaBulan(idx + 1) %></strong></td>
+                  <% kartu.jenis.forEach(function(j){ %>
+                    <% var cell = row[j.id]; %>
+                    <td class="text-center">
+                      <% if (!cell) { %>
+                        <span class="matrix-cell matrix-none" title="Tidak ada tagihan">—</span>
+                      <% } else if (cell.status === 'lunas') { %>
+                        <span class="matrix-cell matrix-lunas" title="Lunas: <%= fmt.rupiah(cell.terbayar) %>">✓</span>
+                      <% } else if (cell.status === 'sebagian') { %>
+                        <span class="matrix-cell matrix-sebagian" title="Sebagian: <%= fmt.rupiah(cell.terbayar) %> / <%= fmt.rupiah(cell.nominal) %>">½</span>
+                      <% } else { %>
+                        <span class="matrix-cell matrix-belum" title="Belum bayar: <%= fmt.rupiah(cell.nominal) %>">✗</span>
+                      <% } %>
+                    </td>
+                  <% }); %>
+                  <td class="text-right"><%= totalBulan > 0 ? fmt.rupiah(totalBulan) : '-' %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+            <tfoot>
+              <tr class="tfoot-total tfoot-grand">
+                <td><strong>TOTAL</strong></td>
+                <% kartu.jenis.forEach(function(j){ %>
+                  <td class="text-center">—</td>
+                <% }); %>
+                <td class="text-right"><strong><%= fmt.rupiah(kartu.totalTerbayar) %></strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Keterangan -->
+  <div class="info-box">
+    <strong>ℹ️ Keterangan simbol:</strong>
+    <span class="matrix-legend-row">
+      <span><span class="matrix-cell matrix-lunas">✓</span> Lunas</span>
+      <span><span class="matrix-cell matrix-sebagian">½</span> Sebagian</span>
+      <span><span class="matrix-cell matrix-belum">✗</span> Belum bayar</span>
+      <span><span class="matrix-cell matrix-none">—</span> Tidak ada tagihan</span>
+    </span>
+  </div>
+
+<% } %>

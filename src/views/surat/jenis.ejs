@@ -1,0 +1,125 @@
+<%
+  const statusLabel = { bulanan: 'Bulanan', tahunan: 'Tahunan', insidental: 'Insidental' };
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Jenis Surat</h2>
+    <p class="page-desc">Master jenis surat keterangan yang dapat diajukan warga.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/surat" class="btn btn-ghost">← Surat Menyurat</a>
+    <% if (currentUser.role === 'admin') { %>
+      <button type="button" class="btn btn-primary" data-modal-open="jenisSuratModal">+ Tambah Jenis</button>
+    <% } %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body no-pad">
+    <% if (jenisList.length === 0) { %>
+      <%- include('../partials/empty-state', {
+        emptyIcon: '🏷️',
+        emptyTitle: 'Belum ada jenis surat',
+        emptyMessage: 'Tambahkan jenis surat yang dapat diajukan warga.'
+      }) %>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Kode</th>
+              <th>Nama Surat</th>
+              <th>Template / Keterangan</th>
+              <th class="text-center">Pengajuan</th>
+              <th>Status</th>
+              <% if (currentUser.role === 'admin') { %><th class="text-right">Aksi</th><% } %>
+            </tr>
+          </thead>
+          <tbody>
+            <% jenisList.forEach(function(j){ %>
+              <tr class="<%= j.is_active ? '' : 'row-inactive' %>">
+                <td><span class="badge badge-info"><%= j.kode %></span></td>
+                <td><strong><%= j.nama %></strong></td>
+                <td class="text-muted"><%= j.template || '-' %></td>
+                <td class="text-center"><%= j.jumlah_pengajuan %></td>
+                <td>
+                  <span class="badge badge-<%= j.is_active ? 'success' : 'neutral' %>">
+                    <%= j.is_active ? 'Aktif' : 'Nonaktif' %>
+                  </span>
+                </td>
+                <% if (currentUser.role === 'admin') { %>
+                  <td class="text-right">
+                    <div class="action-group">
+                      <button type="button" class="btn btn-ghost btn-xs" title="Edit"
+                              data-edit-jenis-surat='<%- JSON.stringify({ id: j.id, kode: j.kode, nama: j.nama, template: j.template || '', is_active: j.is_active }) %>'>✏️</button>
+                      <button type="button" class="btn btn-ghost btn-xs" title="Hapus"
+                              data-confirm-form="/surat/jenis/<%= j.id %>"
+                              data-confirm-title="Hapus Jenis Surat"
+                              data-confirm-message="Hapus jenis surat &quot;<%= j.nama %>&quot;? Jika sudah dipakai, jenis akan dinonaktifkan.">🗑️</button>
+                    </div>
+                  </td>
+                <% } %>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Modal tambah/edit jenis surat -->
+<div class="modal-overlay" id="jenisSuratModal" hidden>
+  <div class="modal-box">
+    <form method="POST" action="/surat/jenis" id="jenisSuratForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="_method" value="POST" id="jenisSuratMethod">
+
+      <div class="modal-header">
+        <h3 id="jenisSuratModalTitle">Tambah Jenis Surat</h3>
+        <button type="button" class="modal-close" data-modal-close>&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="surat_kode">Kode <span class="req">*</span></label>
+            <input type="text" id="surat_kode" name="kode" class="form-control" required maxlength="12" placeholder="SKD">
+          </div>
+
+          <div class="form-group">
+            <label for="surat_nama">Nama Surat <span class="req">*</span></label>
+            <input type="text" id="surat_nama" name="nama" class="form-control" required maxlength="100" placeholder="Surat Keterangan Domisili">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="surat_template">Template / Keterangan</label>
+          <textarea id="surat_template" name="template" class="form-control" rows="3" maxlength="500"
+                    placeholder="Deskripsi penggunaan surat ini"></textarea>
+        </div>
+
+        <div class="form-group" id="suratActiveGroup" hidden>
+          <label for="surat_active">Status</label>
+          <select id="surat_active" name="is_active" class="form-control">
+            <option value="1">Aktif</option>
+            <option value="0">Nonaktif</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-modal-close>Batal</button>
+        <button type="submit" class="btn btn-primary">💾 Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/modal-confirm', {
+  id: 'deleteModal',
+  title: 'Konfirmasi Hapus',
+  message: 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?',
+  action: '#'
+}) %>

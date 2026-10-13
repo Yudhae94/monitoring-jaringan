@@ -1,0 +1,10 @@
+<% if (typeof emptyMessage !== 'undefined') { %>
+  <div class="empty-state">
+    <div class="empty-icon"><%= typeof emptyIcon !== 'undefined' ? emptyIcon : '📭' %></div>
+    <h4><%= typeof emptyTitle !== 'undefined' ? emptyTitle : 'Belum ada data' %></h4>
+    <p><%= emptyMessage %></p>
+    <% if (typeof emptyUrl !== 'undefined' && typeof emptyAction !== 'undefined') { %>
+      <a href="<%= emptyUrl %>" class="btn btn-primary btn-sm"><%= emptyAction %></a>
+    <% } %>
+  </div>
+<% } %>

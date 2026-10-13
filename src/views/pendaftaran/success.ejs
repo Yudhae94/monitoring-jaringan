@@ -1,0 +1,44 @@
+<div class="auth-wrapper">
+  <div class="auth-success">
+    <div class="auth-success-icon">✅</div>
+    <h1>Pendaftaran Terkirim</h1>
+    <p class="auth-success-text">
+      Terima kasih! Data Anda sudah masuk ke antrean verifikasi admin
+      <strong><%= rt.nama %></strong>.
+    </p>
+
+    <div class="auth-success-steps">
+      <div class="succ-step">
+        <span class="succ-num">1</span>
+        <div>
+          <strong>Data Terkirim</strong>
+          <p>Pendaftaran Anda tercatat pada hari ini.</p>
+        </div>
+      </div>
+      <div class="succ-step">
+        <span class="succ-num">2</span>
+        <div>
+          <strong>Verifikasi Admin</strong>
+          <p>Admin akan memeriksa NIK dan data Anda. Mohon tunggu.</p>
+        </div>
+      </div>
+      <div class="succ-step">
+        <span class="succ-num">3</span>
+        <div>
+          <strong>Akun Aktif</strong>
+          <p>Setelah disetujui, Anda dapat masuk memakai email &amp; password yang dibuat.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-success-actions">
+      <a href="/login" class="btn btn-primary btn-lg">Ke Halaman Login</a>
+      <a href="/daftar" class="btn btn-ghost">Daftar Akun Lain</a>
+    </div>
+
+    <p class="auth-success-foot">
+      <%= app.name %> · Kel. <%= rt.kelurahan %>, Kec. <%= rt.kecamatan %><br>
+      <%= rt.kota %>, <%= rt.provinsi %>
+    </p>
+  </div>
+</div>

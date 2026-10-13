@@ -1,0 +1,80 @@
+<div class="page-head">
+  <div>
+    <h2><%= laporan.judul %></h2>
+    <p class="page-desc">Daftar kartu keluarga yang belum melunasi iuran.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/laporan/tunggakan/cetak?tahun=<%= filters.tahun %>" target="_blank" class="btn btn-primary">🖨️ Cetak</a>
+    <a href="/laporan" class="btn btn-ghost">← Laporan</a>
+  </div>
+</div>
+
+<%- include('../partials/filter-bar', {
+  action: '/laporan/tunggakan',
+  resetUrl: '/laporan/tunggakan',
+  fields: [
+    { name: 'tahun', label: 'Tahun', type: 'select', value: filters.tahun,
+      options: tahunOptions.map(t => ({ value: t, label: t })) }
+  ]
+}) %>
+
+<%
+  const cards = [
+    { label: 'Total Tunggakan', value: fmt.rupiah(laporan.total), icon: '💸', tone: 'danger' },
+    { label: 'Jumlah KK Menunggak', value: laporan.jumlahKK, sub: 'kartu keluarga', icon: '🏠', tone: 'warning' },
+    { label: 'Rata-rata per KK', value: fmt.rupiah(laporan.jumlahKK > 0 ? laporan.total / laporan.jumlahKK : 0), icon: '📊', tone: 'info' }
+  ];
+%>
+
+<%- include('../partials/stat-card', { cards }) %>
+
+<div class="card">
+  <div class="card-body no-pad">
+    <% if (laporan.data.length === 0) { %>
+      <%- include('../partials/empty-state', {
+        emptyIcon: '🎉',
+        emptyTitle: 'Tidak ada tunggakan',
+        emptyMessage: 'Seluruh warga telah melunasi iuran pada tahun ' + filters.tahun + '. Kerja bagus!'
+      }) %>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Kartu Keluarga</th>
+              <th>No. KK</th>
+              <th>No. Rumah</th>
+              <th class="text-center">Jml. Tagihan Belum Lunas</th>
+              <th class="text-right">Total Tunggakan</th>
+              <th class="text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% laporan.data.forEach(function(t, i){ %>
+              <tr>
+                <td class="text-muted"><%= i + 1 %></td>
+                <td><strong><%= t.kepala_keluarga %></strong></td>
+                <td><code class="code code-sm"><%= t.no_kk %></code></td>
+                <td><%= t.no_rumah || '-' %></td>
+                <td class="text-center"><span class="badge badge-warning"><%= t.jumlah_tagihan %></span></td>
+                <td class="text-right text-danger"><strong><%= fmt.rupiah(t.total_tunggakan) %></strong></td>
+                <td class="text-right">
+                  <a href="/iuran/tagihan?kk_id=<%= t.id %>&periode_tahun=<%= filters.tahun %>&status=belum_bayar"
+                     class="btn btn-ghost btn-xs" title="Lihat tagihan">📋</a>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+          <tfoot>
+            <tr class="tfoot-total tfoot-grand">
+              <td colspan="5" class="text-right"><strong>TOTAL TUNGGAKAN</strong></td>
+              <td class="text-right text-danger"><strong><%= fmt.rupiah(laporan.total) %></strong></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>

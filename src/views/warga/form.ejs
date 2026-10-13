@@ -1,0 +1,145 @@
+<%
+  const isEdit = Boolean(warga);
+  const action = isEdit ? `/warga/${warga.id}` : '/warga';
+  const v = (field, fallback) => {
+    if (isEdit) return warga[field] === null || warga[field] === undefined ? '' : warga[field];
+    return typeof fallback !== 'undefined' ? fallback : '';
+  };
+  const selectedKK = isEdit ? warga.kk_id : preselectedKK;
+%>
+
+<div class="page-head">
+  <div>
+    <h2><%= isEdit ? 'Edit Data Warga' : 'Tambah Warga' %></h2>
+    <p class="page-desc"><%= isEdit ? 'Perbarui data kependudukan warga.' : 'Daftarkan anggota keluarga baru.' %></p>
+  </div>
+  <div class="page-actions">
+    <a href="<%= isEdit ? '/warga/' + warga.id : '/warga' %>" class="btn btn-ghost">← Kembali</a>
+
+
+<form method="POST" action="<%= action %>" class="form-layout">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (isEdit) { %><input type="hidden" name="_method" value="PUT"><% } %>
+
+  <div class="card">
+    <div class="card-header"><h3>Data Kependudukan</h3>  </div>
+</div>
+</div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group form-group-full">
+          <label for="kk_id">Kartu Keluarga <span class="req">*</span></label>
+          <select id="kk_id" name="kk_id" class="form-control" required>
+            <option value="">— Pilih Kartu Keluarga —</option>
+            <% kkOptions.forEach(function(k){ %>
+              <option value="<%= k.id %>" <%= String(selectedKK) === String(k.id) ? 'selected' : '' %>>
+                <%= k.kepala_keluarga %> — KK <%= k.no_kk %> (No. <%= k.no_rumah || '-' %>)
+              </option>
+            <% }); %>
+          </select>
+  </div>
+
+        <div class="form-group">
+          <label for="nik">NIK <span class="req">*</span></label>
+          <input type="text" id="nik" name="nik" class="form-control"
+                 value="<%= v('nik') %>" required maxlength="16" pattern="\d{16}"
+                 inputmode="numeric" placeholder="16 digit angka">
+        </div>
+
+        <div class="form-group">
+          <label for="nama">Nama Lengkap <span class="req">*</span></label>
+          <input type="text" id="nama" name="nama" class="form-control"
+                 value="<%= v('nama') %>" required maxlength="100" placeholder="Nama sesuai KTP">
+        </div>
+
+        <div class="form-group">
+          <label for="jenis_kelamin">Jenis Kelamin <span class="req">*</span></label>
+          <select id="jenis_kelamin" name="jenis_kelamin" class="form-control" required>
+            <option value="">— Pilih —</option>
+            <option value="L" <%= v('jenis_kelamin') === 'L' ? 'selected' : '' %>>Laki-laki</option>
+            <option value="P" <%= v('jenis_kelamin') === 'P' ? 'selected' : '' %>>Perempuan</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="status_keluarga">Status dalam Keluarga <span class="req">*</span></label>
+          <select id="status_keluarga" name="status_keluarga" class="form-control" required>
+            <% Object.keys(labels.STATUS_KELUARGA).forEach(function(key){ %>
+              <option value="<%= key %>" <%= v('status_keluarga', 'anak') === key ? 'selected' : '' %>>
+                <%= labels.STATUS_KELUARGA[key] %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="tempat_lahir">Tempat Lahir</label>
+          <input type="text" id="tempat_lahir" name="tempat_lahir" class="form-control"
+                 value="<%= v('tempat_lahir') %>" maxlength="60" placeholder="Kota kelahiran">
+        </div>
+
+        <div class="form-group">
+          <label for="tanggal_lahir">Tanggal Lahir</label>
+          <input type="date" id="tanggal_lahir" name="tanggal_lahir" class="form-control"
+                 value="<%= fmt.toDateInput(v('tanggal_lahir')) %>">
+        </div>
+
+        <div class="form-group">
+          <label for="agama">Agama</label>
+          <select id="agama" name="agama" class="form-control">
+            <% ['Islam','Kristen','Katolik','Hindu','Buddha','Konghucu'].forEach(function(a){ %>
+              <option value="<%= a %>" <%= v('agama', 'Islam') === a ? 'selected' : '' %>><%= a %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="status_perkawinan">Status Perkawinan</label>
+          <select id="status_perkawinan" name="status_perkawinan" class="form-control">
+            <option value="">— Pilih —</option>
+            <% Object.keys(labels.STATUS_KAWIN).forEach(function(key){ %>
+              <option value="<%= key %>" <%= v('status_perkawinan') === key ? 'selected' : '' %>>
+                <%= labels.STATUS_KAWIN[key] %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="pendidikan">Pendidikan Terakhir</label>
+          <select id="pendidikan" name="pendidikan" class="form-control">
+            <option value="">— Pilih —</option>
+            <% ['Tidak Sekolah','SD','SMP','SMA','SMK','D3','S1','S2','S3'].forEach(function(p){ %>
+              <option value="<%= p %>" <%= v('pendidikan') === p ? 'selected' : '' %>><%= p %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="pekerjaan">Pekerjaan</label>
+          <input type="text" id="pekerjaan" name="pekerjaan" class="form-control"
+                 value="<%= v('pekerjaan') %>" maxlength="60" placeholder="Contoh: Karyawan Swasta">
+        </div>
+
+        <div class="form-group">
+          <label for="kewarganegaraan">Kewarganegaraan</label>
+          <select id="kewarganegaraan" name="kewarganegaraan" class="form-control">
+            <option value="WNI" <%= v('kewarganegaraan', 'WNI') === 'WNI' ? 'selected' : '' %>>WNI</option>
+            <option value="WNA" <%= v('kewarganegaraan') === 'WNA' ? 'selected' : '' %>>WNA</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="no_hp">Nomor HP</label>
+          <input type="text" id="no_hp" name="no_hp" class="form-control"
+                 value="<%= v('no_hp') %>" maxlength="20" placeholder="08xxxxxxxxxx">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary"><%= isEdit ? '💾 Simpan Perubahan' : '+ Simpan Warga' %></button>
+    <a href="/warga" class="btn btn-ghost">Batal</a>
+  </div>
+</form>

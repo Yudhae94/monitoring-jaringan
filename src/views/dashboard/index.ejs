@@ -1,0 +1,299 @@
+<%
+  const cards = [
+    { label: 'Kartu Keluarga', value: fmt.rupiah(stats.totalKK, false), sub: 'KK aktif terdaftar', icon: '🏠', tone: 'primary' },
+    { label: 'Jumlah Warga', value: fmt.rupiah(stats.jumlahWarga, false), sub: `${demografi.lakiLaki} L · ${demografi.perempuan} P`, icon: '👥', tone: 'info' },
+    { label: 'Saldo Kas RT', value: fmt.rupiah(stats.kasTahunIni.saldo), sub: `Tahun ${periode.tahun}`, icon: '🏦', tone: stats.kasTahunIni.saldo >= 0 ? 'success' : 'danger' },
+    { label: 'Tunggakan Iuran', value: fmt.rupiah(stats.tagihanTahunIni.total_tunggakan), sub: `Tahun ${periode.tahun}`, icon: '⚠️', tone: 'danger' },
+    { label: `Iuran ${fmt.namaBulan(periode.bulan)}`, value: `${stats.tagihanBulanIni.persentase}%`, sub: `${fmt.rupiah(stats.tagihanBulanIni.total_terbayar)} dari ${fmt.rupiah(stats.tagihanBulanIni.total_nominal)}`, icon: '💰', tone: 'warning' },
+    { label: 'Pengajuan Surat', value: fmt.rupiah(stats.surat.total, false), sub: `${stats.surat.menunggu} menunggu diproses`, icon: '✉️', tone: stats.surat.menunggu > 0 ? 'warning' : 'neutral' }
+  ];
+%>
+
+<!-- ============ HERO SAPAAN ============ -->
+<div class="welcome-hero">
+  <div class="welcome-text">
+    <span class="welcome-eyebrow">Dashboard Pengurus</span>
+    <h2>Selamat datang, <%= currentUser ? currentUser.nama : 'Pengurus' %> 👋</h2>
+    <p>Ringkasan data warga, keuangan, dan iuran <%= rt.label %> — per <%= fmt.tanggalID(new Date(), { long: true }) %>.</p>
+  </div>
+  <div class="welcome-actions">
+    <a href="/iuran/tagihan" class="btn btn-primary">💳 Kelola Tagihan</a>
+    <a href="/laporan/bulanan?bulan=<%= periode.bulan %>&tahun=<%= periode.tahun %>" class="btn btn-ghost">📊 Laporan Bulan Ini</a>
+  </div>
+</div>
+
+<%- include('../partials/stat-card', { cards }) %>
+
+<!-- ============ KEUANGAN BULAN INI ============ -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <h3>💰 Ringkasan Keuangan — <%= fmt.namaBulan(periode.bulan) %> <%= periode.tahun %></h3>
+      <a href="/laporan/bulanan?bulan=<%= periode.bulan %>&tahun=<%= periode.tahun %>"
+         class="btn btn-ghost btn-sm">Detail →</a>
+    </div>
+    <div class="card-body">
+      <div class="money-row">
+        <div class="money-item money-in">
+          <span class="money-label">Pemasukan</span>
+          <span class="money-value"><%= fmt.rupiah(stats.kasBulanIni.total_masuk) %></span>
+        </div>
+        <div class="money-item money-out">
+          <span class="money-label">Pengeluaran</span>
+          <span class="money-value"><%= fmt.rupiah(stats.kasBulanIni.total_keluar) %></span>
+        </div>
+        <div class="money-item money-net">
+          <span class="money-label">Selisih</span>
+          <span class="money-value"><%= fmt.rupiah(stats.kasBulanIni.saldo) %></span>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-head">
+          <span>Realisasi iuran bulan ini</span>
+          <strong><%= stats.tagihanBulanIni.persentase %>%</strong>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: <%= stats.tagihanBulanIni.persentase %>%"></div>
+        </div>
+        <div class="progress-foot">
+          <span><%= stats.tagihanBulanIni.jumlah_lunas %> lunas</span>
+          <span><%= stats.tagihanBulanIni.jumlah_belum %> belum bayar</span>
+          <span><%= stats.tagihanBulanIni.jumlah_sebagian %> sebagian</span>
+        </div>
+      </div>
+
+      <div class="mini-stats">
+        <div class="mini-stat">
+          <span class="mini-label">Pembayaran hari ini</span>
+          <span class="mini-value"><%= fmt.rupiah(stats.pembayaranHariIni.total) %></span>
+          <span class="mini-sub"><%= stats.pembayaranHariIni.jumlah %> transaksi</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-label">Saldo kas akhir tahun</span>
+          <span class="mini-value"><%= fmt.rupiah(stats.kasTahunIni.saldo) %></span>
+          <span class="mini-sub">masuk <%= fmt.rupiah(stats.kasTahunIni.total_masuk) %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TUNGGAKAN -->
+  <div class="card">
+    <div class="card-header">
+      <h3>⚠️ Tunggakan Terbesar</h3>
+      <a href="/laporan/tunggakan?tahun=<%= periode.tahun %>" class="btn btn-ghost btn-sm">Semua →</a>
+    </div>
+    <div class="card-body no-pad">
+      <% if (tunggakan.length === 0) { %>
+        <div class="empty-mini">🎉 Tidak ada tunggakan tahun ini.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% tunggakan.forEach(function(t){ %>
+            <div class="list-row">
+              <div class="list-main">
+                <strong><%= t.kepala_keluarga %></strong>
+                <small>No. <%= t.no_rumah || '-' %> · <%= t.jumlah_tagihan %> tagihan belum lunas</small>
+              </div>
+              <div class="list-value text-danger"><%= fmt.rupiah(t.total_tunggakan) %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- ============ GRAFIK ============ -->
+<div class="card">
+  <div class="card-header">
+    <h3>📈 Arus Kas Tahun <%= periode.tahun %></h3>
+    <div class="chart-legend">
+      <span class="legend-item"><i class="dot dot-success"></i> Masuk</span>
+      <span class="legend-item"><i class="dot dot-danger"></i> Keluar</span>
+    </div>
+  </div>
+  <div class="card-body">
+    <canvas id="chartKas" height="90"
+            data-labels='<%- JSON.stringify(rekapKas.map(r => fmt.namaBulan(r.bulan, true))) %>'
+            data-masuk='<%- JSON.stringify(rekapKas.map(r => r.masuk)) %>'
+            data-keluar='<%- JSON.stringify(rekapKas.map(r => r.keluar)) %>'></canvas>
+  </div>
+</div>
+
+<!-- ============ AKTIVITAS TERBARU ============ -->
+<div class="grid-3">
+  <div class="card">
+    <div class="card-header">
+      <h3>💳 Pembayaran Terbaru</h3>
+      <a href="/iuran/pembayaran" class="btn btn-ghost btn-sm">Semua →</a>
+    </div>
+    <div class="card-body no-pad">
+      <% if (pembayaranTerbaru.length === 0) { %>
+        <div class="empty-mini">Belum ada pembayaran.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% pembayaranTerbaru.forEach(function(p){ %>
+            <div class="list-row">
+              <div class="list-main">
+                <strong><%= p.kepala_keluarga %></strong>
+                <small><%= p.jenis_nama %> · <%= fmt.namaBulan(p.periode_bulan, true) %> <%= p.periode_tahun %></small>
+              </div>
+              <div class="list-value text-success"><%= fmt.rupiah(p.nominal) %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>🏦 Transaksi Kas Terbaru</h3>
+      <a href="/kas" class="btn btn-ghost btn-sm">Semua →</a>
+    </div>
+    <div class="card-body no-pad">
+      <% if (kasTerbaru.length === 0) { %>
+        <div class="empty-mini">Belum ada transaksi.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% kasTerbaru.forEach(function(k){ %>
+            <div class="list-row">
+              <div class="list-main">
+                <strong><%= k.keterangan.length > 40 ? k.keterangan.slice(0, 40) + '…' : k.keterangan %></strong>
+                <small><%= fmt.tanggalID(k.tanggal) %> · <%= k.kategori_nama || 'Tanpa kategori' %></small>
+              </div>
+              <div class="list-value <%= k.tipe === 'masuk' ? 'text-success' : 'text-danger' %>">
+                <%= k.tipe === 'masuk' ? '+' : '−' %> <%= fmt.rupiah(k.nominal) %>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>🕒 Aktivitas Sistem</h3>
+      <a href="/users" class="btn btn-ghost btn-sm">User →</a>
+    </div>
+    <div class="card-body no-pad">
+      <% if (aktivitas.length === 0) { %>
+        <div class="empty-mini">Belum ada aktivitas.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% aktivitas.forEach(function(a){ %>
+            <div class="list-row">
+              <div class="list-main">
+                <strong><%= a.deskripsi || a.aksi %></strong>
+                <small><%= a.user_nama || 'Sistem' %> · <%= fmt.tanggalWaktu(a.created_at) %></small>
+              </div>
+              <span class="badge badge-neutral"><%= a.modul %></span>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PENGUMUMAN & DEMOGRAFI ============ -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <h3>📢 Pengumuman Aktif</h3>
+      <a href="/pengumuman" class="btn btn-ghost btn-sm">Semua →</a>
+    </div>
+    <div class="card-body">
+      <% if (pengumuman.length === 0) { %>
+        <div class="empty-mini">Belum ada pengumuman aktif.</div>
+      <% } else { %>
+        <div class="announce-list">
+          <% pengumuman.forEach(function(p){ %>
+            <a href="/pengumuman/<%= p.id %>" class="announce-item announce-<%= p.prioritas %>">
+              <div class="announce-head">
+                <span class="badge badge-<%= p.prioritas === 'urgent' ? 'danger' : (p.prioritas === 'penting' ? 'warning' : 'neutral') %>">
+                  <%= p.prioritas.toUpperCase() %>
+                </span>
+                <span class="announce-date"><%= fmt.tanggalID(p.tanggal_mulai) %></span>
+              </div>
+              <h4><%= p.judul %></h4>
+              <p><%= p.isi.length > 110 ? p.isi.slice(0, 110) + '…' : p.isi %></p>
+            </a>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>📊 Demografi Warga</h3>
+      <a href="/warga" class="btn btn-ghost btn-sm">Data →</a>
+    </div>
+    <div class="card-body">
+      <div class="demo-grid">
+        <div class="demo-item"><span class="demo-num"><%= demografi.balita %></span><span class="demo-lbl">Balita</span></div>
+        <div class="demo-item"><span class="demo-num"><%= demografi.anak %></span><span class="demo-lbl">Anak</span></div>
+        <div class="demo-item"><span class="demo-num"><%= demografi.remaja %></span><span class="demo-lbl">Remaja</span></div>
+        <div class="demo-item"><span class="demo-num"><%= demografi.dewasa %></span><span class="demo-lbl">Dewasa</span></div>
+        <div class="demo-item"><span class="demo-num"><%= demografi.lansia %></span><span class="demo-lbl">Lansia</span></div>
+        <div class="demo-item"><span class="demo-num"><%= demografi.total %></span><span class="demo-lbl">Total</span></div>
+      </div>
+
+      <h4 class="sub-heading">Komposisi Pekerjaan</h4>
+      <div class="list-stack">
+        <% demografi.byPekerjaan.forEach(function(p){ %>
+          <div class="list-row">
+            <div class="list-main"><strong><%= p.pekerjaan %></strong></div>
+            <div class="list-value"><%= p.jumlah %> orang</div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SURAT TERBARU ============ -->
+<div class="card">
+  <div class="card-header">
+    <h3>✉️ Pengajuan Surat Terbaru</h3>
+    <a href="/surat" class="btn btn-ghost btn-sm">Semua →</a>
+  </div>
+  <div class="card-body no-pad">
+    <% if (suratTerbaru.length === 0) { %>
+      <div class="empty-mini">Belum ada pengajuan surat.</div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>No. Surat</th>
+              <th>Pemohon</th>
+              <th>Jenis Surat</th>
+              <th>Keperluan</th>
+              <th>Tanggal</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% suratTerbaru.forEach(function(s){ %>
+              <tr>
+                <td><a href="/surat/<%= s.id %>" class="link"><%= s.no_surat %></a></td>
+                <td><%= s.nama_pemohon %></td>
+                <td><%= s.jenis_nama %></td>
+                <td class="text-muted"><%= s.keperluan.length > 40 ? s.keperluan.slice(0, 40) + '…' : s.keperluan %></td>
+                <td><%= fmt.tanggalID(s.tanggal_pengajuan) %></td>
+                <td><span class="badge badge-<%= {menunggu:'warning',diproses:'info',disetujui:'success',ditolak:'danger',selesai:'neutral'}[s.status] %>"><%= {menunggu:'Menunggu',diproses:'Diproses',disetujui:'Disetujui',ditolak:'Ditolak',selesai:'Selesai'}[s.status] %></span></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/js/dashboard.js"></script>

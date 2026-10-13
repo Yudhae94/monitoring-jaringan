@@ -1,0 +1,142 @@
+<%
+  const statusLabel = { menunggu: 'Menunggu', diproses: 'Diproses', disetujui: 'Disetujui', ditolak: 'Ditolak', selesai: 'Selesai' };
+  const statusBadge = { menunggu: 'warning', diproses: 'info', disetujui: 'success', ditolak: 'danger', selesai: 'neutral' };
+  const isPengurus = ['admin', 'bendahara'].includes(currentUser.role);
+  const bisaCetak = ['disetujui', 'selesai'].includes(surat.status);
+%>
+
+<div class="page-head">
+  <div>
+    <h2><%= surat.jenis_nama %></h2>
+    <p class="page-desc">Nomor surat <code class="code"><%= surat.no_surat %></code></p>
+  </div>
+  <div class="page-actions">
+    <% if (bisaCetak) { %>
+      <a href="/surat/<%= surat.id %>/cetak" target="_blank" class="btn btn-primary">🖨️ Cetak Surat</a>
+    <% } %>
+    <a href="/surat" class="btn btn-ghost">← Kembali</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- DETAIL -->
+  <div class="card">
+    <div class="card-header">
+      <h3>📄 Detail Pengajuan</h3>
+      <span class="badge badge-<%= statusBadge[surat.status] %>"><%= statusLabel[surat.status] %></span>
+    </div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Nomor Surat</dt><dd><code class="code"><%= surat.no_surat %></code></dd>
+        <dt>Jenis Surat</dt><dd><%= surat.jenis_nama %> (<%= surat.jenis_kode %>)</dd>
+        <dt>Nama Pemohon</dt><dd><strong><%= surat.nama_pemohon %></strong></dd>
+        <dt>NIK Pemohon</dt><dd><%= surat.nik_pemohon || '-' %></dd>
+        <dt>Nomor HP</dt><dd><%= surat.no_hp || '-' %></dd>
+        <dt>Keperluan</dt><dd><%= surat.keperluan %></dd>
+        <% if (surat.keterangan) { %>
+          <dt>Keterangan Pemohon</dt><dd class="text-muted"><%= surat.keterangan %></dd>
+        <% } %>
+        <dt>Tanggal Pengajuan</dt><dd><%= fmt.tanggalID(surat.tanggal_pengajuan, { long: true }) %></dd>
+        <% if (surat.tanggal_proses) { %>
+          <dt>Tanggal Diproses</dt><dd><%= fmt.tanggalWaktu(surat.tanggal_proses) %></dd>
+        <% } %>
+        <% if (surat.diproses_nama) { %>
+          <dt>Diproses Oleh</dt><dd><%= surat.diproses_nama %></dd>
+        <% } %>
+      </dl>
+
+      <% if (surat.catatan_admin) { %>
+        <div class="alert alert-<%= surat.status === 'ditolak' ? 'danger' : 'info' %> mt-3">
+          <span class="alert-icon"><%= surat.status === 'ditolak' ? '!' : 'i' %></span>
+          <span><strong>Catatan pengurus:</strong> <%= surat.catatan_admin %></span>
+        </div>
+      <% } %>
+
+      <% if (!bisaCetak && surat.status !== 'ditolak') { %>
+        <div class="info-box mt-3">
+          <strong>ℹ️ Status:</strong> Surat dapat dicetak setelah disetujui oleh pengurus RT.
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- AKSI -->
+  <% if (isPengurus) { %>
+    <div class="card">
+      <div class="card-header"><h3>⚙️ Proses Pengajuan</h3></div>
+      <div class="card-body">
+        <form method="POST" action="/surat/<%= surat.id %>/status?_method=PUT">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="_method" value="PUT">
+
+          <div class="form-group">
+            <label for="status">Ubah Status <span class="req">*</span></label>
+            <select id="status" name="status" class="form-control" required>
+              <% Object.keys(statusLabel).forEach(function(k){ %>
+                <option value="<%= k %>" <%= surat.status === k ? 'selected' : '' %>><%= statusLabel[k] %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="catatan_admin">Catatan Pengurus</label>
+            <textarea id="catatan_admin" name="catatan_admin" class="form-control" rows="4" maxlength="500"
+                      placeholder="Wajib diisi bila status Ditolak. Contoh: Lengkapi surat pengantar dari kelurahan."><%= surat.catatan_admin || '' %></textarea>
+            <small class="form-hint">Alasan wajib diisi jika pengajuan ditolak.</small>
+          </div>
+
+          <div class="form-actions-inline">
+            <button type="submit" class="btn btn-primary">💾 Simpan Status</button>
+            <% if (['menunggu', 'ditolak'].includes(surat.status)) { %>
+              <button type="button" class="btn btn-danger"
+                      data-confirm-form="/surat/<%= surat.id %>"
+                      data-confirm-title="Hapus Pengajuan"
+                      data-confirm-message="Hapus pengajuan surat <%= surat.no_surat %>? Tindakan ini tidak dapat dibatalkan.">🗑️ Hapus</button>
+            <% } %>
+          </div>
+        </form>
+
+        <div class="flow-steps">
+          <% var flow = ['menunggu', 'diproses', 'disetujui', 'selesai']; %>
+          <% var idxNow = flow.indexOf(surat.status); %>
+          <% flow.forEach(function(step, i){ %>
+            <div class="flow-step <%= surat.status === 'ditolak' ? '' : (i <= idxNow ? 'done' : '') %>">
+              <span class="flow-dot"><%= i + 1 %></span>
+              <span class="flow-label"><%= statusLabel[step] %></span>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="card">
+      <div class="card-header"><h3>📌 Alur Pengajuan</h3></div>
+      <div class="card-body">
+        <div class="flow-steps flow-steps-vertical">
+          <% var flow2 = ['menunggu', 'diproses', 'disetujui', 'selesai']; %>
+          <% var idx2 = flow2.indexOf(surat.status); %>
+          <% flow2.forEach(function(step, i){ %>
+            <div class="flow-step flow-step-v <%= surat.status === 'ditolak' ? '' : (i <= idx2 ? 'done' : '') %>">
+              <span class="flow-dot"><%= i + 1 %></span>
+              <span class="flow-label"><%= statusLabel[step] %></span>
+            </div>
+          <% }); %>
+        </div>
+
+        <% if (surat.status === 'ditolak') { %>
+          <div class="alert alert-danger mt-3">
+            <span class="alert-icon">!</span>
+            <span>Pengajuan Anda <strong>ditolak</strong>. Silakan perbaiki sesuai catatan pengurus dan ajukan kembali.</span>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/modal-confirm', {
+  id: 'deleteModal',
+  title: 'Konfirmasi Hapus',
+  message: 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?',
+  action: '#'
+}) %>

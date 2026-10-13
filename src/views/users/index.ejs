@@ -1,0 +1,123 @@
+<%
+  const roleLabel = { admin: 'Administrator', bendahara: 'Bendahara', warga: 'Warga' };
+  const roleBadge = { admin: 'danger', bendahara: 'warning', warga: 'info' };
+
+  const cards = [
+    { label: 'Total User', value: stats.total, icon: '👤', tone: 'primary' },
+    { label: 'Admin', value: stats.admin, icon: '🛡️', tone: 'danger' },
+    { label: 'Bendahara', value: stats.bendahara, icon: '💼', tone: 'warning' },
+    { label: 'Warga', value: stats.warga, icon: '👥', tone: 'info' },
+    { label: 'Aktif', value: stats.aktif, icon: '✅', tone: 'success' },
+    { label: 'Nonaktif', value: stats.nonaktif, icon: '🚫', tone: 'neutral' }
+  ];
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Manajemen User</h2>
+    <p class="page-desc">Kelola akun pengguna sistem beserta hak aksesnya berdasarkan role.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/users/create" class="btn btn-primary">+ Tambah User</a>
+  </div>
+</div>
+
+<%- include('../partials/stat-card', { cards }) %>
+
+<%- include('../partials/filter-bar', {
+  action: '/users',
+  resetUrl: '/users',
+  fields: [
+    { name: 'q', label: 'Cari', type: 'search', value: filters.q, placeholder: 'Nama atau email…' },
+    { name: 'role', label: 'Role', type: 'select', value: filters.role, options: [
+      { value: 'admin', label: 'Administrator' },
+      { value: 'bendahara', label: 'Bendahara' },
+      { value: 'warga', label: 'Warga' }
+    ]},
+    { name: 'is_active', label: 'Status', type: 'select', value: filters.is_active, options: [
+      { value: '1', label: 'Aktif' },
+      { value: '0', label: 'Nonaktif' }
+    ]}
+  ]
+}) %>
+
+<div class="card">
+  <div class="card-body no-pad">
+    <% if (users.length === 0) { %>
+      <%- include('../partials/empty-state', {
+        emptyIcon: '👤',
+        emptyTitle: 'User tidak ditemukan',
+        emptyMessage: 'Tidak ada user yang cocok dengan filter yang Anda terapkan.',
+        emptyUrl: '/users/create',
+        emptyAction: '+ Tambah User'
+      }) %>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>No. HP</th>
+              <th>Login Terakhir</th>
+              <th>Status</th>
+              <th class="text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% users.forEach(function(u){ %>
+              <tr class="<%= u.is_active ? '' : 'row-inactive' %>">
+                <td>
+                  <div class="cell-user">
+                    <span class="mini-avatar"><%= u.nama.charAt(0).toUpperCase() %></span>
+                    <strong><%= u.nama %></strong>
+                  </div>
+                </td>
+                <td><%= u.email %></td>
+                <td><span class="badge badge-<%= roleBadge[u.role] %>"><%= roleLabel[u.role] %></span></td>
+                <td><%= u.no_hp || '-' %></td>
+                <td class="text-muted"><%= u.last_login ? fmt.tanggalWaktu(u.last_login) : 'Belum pernah' %></td>
+                <td>
+                  <span class="badge badge-<%= u.is_active ? 'success' : 'neutral' %>">
+                    <%= u.is_active ? 'Aktif' : 'Nonaktif' %>
+                  </span>
+                </td>
+                <td class="text-right">
+                  <div class="action-group">
+                    <a href="/users/<%= u.id %>/edit" class="btn btn-ghost btn-xs" title="Edit">✏️</a>
+
+                    <form method="POST" action="/users/<%= u.id %>/toggle?_method=PATCH" class="inline-form">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <input type="hidden" name="_method" value="PATCH">
+                      <button type="submit" class="btn btn-ghost btn-xs"
+                              title="<%= u.is_active ? 'Nonaktifkan' : 'Aktifkan' %>"
+                              <%= u.id === currentUser.id ? 'disabled' : '' %>>
+                        <%= u.is_active ? '🚫' : '✅' %>
+                      </button>
+                    </form>
+
+                    <button type="button" class="btn btn-ghost btn-xs"
+                            title="Hapus"
+                            data-confirm-form="/users/<%= u.id %>"
+                            data-confirm-title="Hapus User"
+                            data-confirm-message="Hapus user &quot;<%= u.nama %>&quot;? Tindakan ini tidak dapat dibatalkan."
+                            <%= u.id === currentUser.id ? 'disabled' : '' %>>🗑️</button>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/pagination', { pagination, baseUrl: '/users' }) %>
+<%- include('../partials/modal-confirm', {
+  id: 'deleteModal',
+  title: 'Konfirmasi Hapus',
+  message: 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?',
+  action: '#'
+}) %>

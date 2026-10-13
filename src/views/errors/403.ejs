@@ -1,0 +1,9 @@
+<div class="error-page">
+  <div class="error-code error-code-warning">403</div>
+  <h1>Akses Ditolak</h1>
+  <p class="error-message"><%= typeof pesan !== 'undefined' ? pesan : 'Anda tidak memiliki hak akses ke halaman ini.' %></p>
+  <div class="error-actions">
+    <a href="/dashboard" class="btn btn-primary">← Kembali ke Dashboard</a>
+    <a href="javascript:history.back()" class="btn btn-ghost">Halaman Sebelumnya</a>
+  </div>
+</div>

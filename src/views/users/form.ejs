@@ -1,0 +1,113 @@
+<%
+  const isEdit = Boolean(userData);
+  const action = isEdit ? `/users/${userData.id}` : '/users';
+  const val = (field, fallback) => {
+    if (isEdit) return userData[field] === null || userData[field] === undefined ? '' : userData[field];
+    return typeof fallback !== 'undefined' ? fallback : '';
+  };
+%>
+
+<div class="page-head">
+  <div>
+    <h2><%= isEdit ? 'Edit User' : 'Tambah User' %></h2>
+    <p class="page-desc"><%= isEdit ? 'Perbarui data dan hak akses user.' : 'Buat akun baru beserta role aksesnya.' %></p>
+  </div>
+  <div class="page-actions">
+    <a href="/users" class="btn btn-ghost">← Kembali</a>
+
+
+<form method="POST" action="<%= action %>" class="form-layout">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (isEdit) { %><input type="hidden" name="_method" value="PUT"><% } %>
+
+  <div class="card">
+    <div class="card-header"><h3>Data Akun</h3>  </div>
+</div>
+</div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="nama">Nama Lengkap <span class="req">*</span></label>
+          <input type="text" id="nama" name="nama" class="form-control"
+                 value="<%= val('nama') %>" required maxlength="100" placeholder="Nama lengkap user">
+  </div>
+
+        <div class="form-group">
+          <label for="email">Email <span class="req">*</span></label>
+          <input type="email" id="email" name="email" class="form-control"
+                 value="<%= val('email') %>" required maxlength="120" placeholder="nama@email.com">
+        </div>
+
+        <div class="form-group">
+          <label for="role">Role <span class="req">*</span></label>
+          <select id="role" name="role" class="form-control" required>
+            <option value="admin" <%= val('role') === 'admin' ? 'selected' : '' %>>Administrator — akses penuh</option>
+            <option value="bendahara" <%= val('role') === 'bendahara' ? 'selected' : '' %>>Bendahara — kelola keuangan</option>
+            <option value="warga" <%= val('role') === 'warga' ? 'selected' : '' %>>Warga — akses terbatas</option>
+          </select>
+          <small class="form-hint">Role menentukan menu dan aksi yang dapat diakses.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="no_hp">Nomor HP</label>
+          <input type="text" id="no_hp" name="no_hp" class="form-control"
+                 value="<%= val('no_hp') %>" placeholder="08xxxxxxxxxx" maxlength="20">
+        </div>
+
+        <div class="form-group">
+          <label for="warga_id">Tautkan ke Data Warga</label>
+          <select id="warga_id" name="warga_id" class="form-control">
+            <option value="">— Tidak ditautkan —</option>
+            <% if (isEdit && userData.warga_id) { %>
+              <option value="<%= userData.warga_id %>" selected>
+                <%= userData.warga_nama || 'Warga #' + userData.warga_id %> (saat ini)
+              </option>
+            <% } %>
+            <% wargaOptions.forEach(function(w){ %>
+              <option value="<%= w.id %>"><%= w.nama %> — NIK <%= w.nik %></option>
+            <% }); %>
+          </select>
+          <small class="form-hint">Wajib untuk role Warga agar dapat melihat tagihan & mengajukan surat.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="is_active">Status Akun</label>
+          <select id="is_active" name="is_active" class="form-control">
+            <option value="1" <%= String(val('is_active', 1)) === '1' ? 'selected' : '' %>>Aktif</option>
+            <option value="0" <%= String(val('is_active', 1)) === '0' ? 'selected' : '' %>>Nonaktif</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Password</h3>
+      <% if (isEdit) { %><span class="badge badge-neutral">Kosongkan bila tidak diubah</span><% } %>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="password">Password <%= isEdit ? '' : '*' %></label>
+          <input type="password" id="password" name="password" class="form-control"
+                 <%= isEdit ? '' : 'required' %> minlength="6"
+                 placeholder="<%= isEdit ? 'Biarkan kosong jika tidak diubah' : 'Minimal 6 karakter' %>"
+                 autocomplete="new-password">
+        </div>
+
+        <div class="form-group">
+          <label for="konfirmasi_password">Konfirmasi Password <%= isEdit ? '' : '*' %></label>
+          <input type="password" id="konfirmasi_password" name="konfirmasi_password" class="form-control"
+                 <%= isEdit ? '' : 'required' %> minlength="6"
+                 placeholder="Ulangi password" autocomplete="new-password">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary"><%= isEdit ? '💾 Simpan Perubahan' : '+ Tambah User' %></button>
+    <a href="/users" class="btn btn-ghost">Batal</a>
+  </div>
+</form>

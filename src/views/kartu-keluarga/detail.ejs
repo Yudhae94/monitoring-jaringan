@@ -1,0 +1,79 @@
+<%
+  const statusRumahLabel = { milik: 'Milik Sendiri', sewa: 'Sewa', kontrak: 'Kontrak', numpang: 'Numpang' };
+%>
+
+<div class="page-head">
+  <div>
+    <h2><%= kk.kepala_keluarga %></h2>
+    <p class="page-desc">Kartu Keluarga <code class="code"><%= kk.no_kk %></code></p>
+  </div>
+  <div class="page-actions">
+    <% if (currentUser.role === 'admin') { %>
+      <a href="/kartu-keluarga/<%= kk.id %>/edit" class="btn btn-ghost">✏️ Edit</a>
+      <a href="/warga/create?kk_id=<%= kk.id %>" class="btn btn-primary">+ Tambah Anggota</a>
+    <% } %>
+    <a href="/kartu-keluarga" class="btn btn-ghost">← Kembali</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><h3>🏠 Informasi KK</h3></div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Nomor KK</dt><dd><code class="code"><%= kk.no_kk %></code></dd>
+        <dt>Kepala Keluarga</dt><dd><strong><%= kk.kepala_keluarga %></strong></dd>
+        <dt>Alamat</dt><dd><%= kk.alamat %></dd>
+        <dt>Blok / No. Rumah</dt><dd><%= kk.blok || '-' %> / <%= kk.no_rumah || '-' %></dd>
+        <dt>RT / RW</dt><dd><%= kk.rt || rt.number %> / <%= kk.rw || rt.rw %></dd>
+        <dt>Kode Pos</dt><dd><%= kk.kode_pos || '-' %></dd>
+        <dt>Status Rumah</dt>
+        <dd><span class="badge badge-info"><%= statusRumahLabel[kk.status_rumah] %></span></dd>
+        <dt>Jumlah Anggota</dt><dd><%= kk.jumlah_anggota %> orang</dd>
+        <dt>Tunggakan</dt>
+        <dd>
+          <% if (kk.jumlah_tunggakan > 0) { %>
+            <span class="badge badge-danger"><%= kk.jumlah_tunggakan %> tagihan belum lunas</span>
+          <% } else { %>
+            <span class="badge badge-success">Tidak ada tunggakan</span>
+          <% } %>
+        </dd>
+        <dt>Terdaftar</dt><dd><%= fmt.tanggalID(kk.created_at) %></dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>👥 Anggota Keluarga</h3>
+      <span class="badge badge-neutral"><%= anggota.length %> orang</span>
+    </div>
+    <div class="card-body no-pad">
+      <% if (anggota.length === 0) { %>
+        <%- include('../partials/empty-state', {
+          emptyIcon: '👥',
+          emptyTitle: 'Belum ada anggota',
+          emptyMessage: 'Tambahkan anggota keluarga untuk KK ini.',
+          emptyUrl: currentUser.role === 'admin' ? '/warga/create?kk_id=' + kk.id : '/warga',
+          emptyAction: currentUser.role === 'admin' ? '+ Tambah Anggota' : null
+        }) %>
+      <% } else { %>
+        <div class="list-stack">
+          <% anggota.forEach(function(w){ %>
+            <a href="/warga/<%= w.id %>" class="list-row list-row-link">
+              <div class="list-main">
+                <strong><%= w.nama %></strong>
+                <small>
+                  <%= labels.STATUS_KELUARGA[w.status_keluarga] || w.status_keluarga %>
+                  · <%= labels.JK[w.jenis_kelamin] %>
+                  · <%= w.tanggal_lahir ? fmt.tanggalID(w.tanggal_lahir) : 'TTL -' %>
+                </small>
+              </div>
+              <code class="code code-sm"><%= w.nik %></code>
+            </a>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>

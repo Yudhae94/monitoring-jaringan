@@ -1,0 +1,130 @@
+<div class="page-head">
+  <div>
+    <h2>Generate Tagihan Massal</h2>
+    <p class="page-desc">Membuat tagihan untuk <strong>semua kartu keluarga aktif</strong> pada periode terpilih.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/iuran/tagihan" class="btn btn-ghost">← Tagihan</a>
+
+<%- include('../partials/info-tabs', {
+  tabs: [
+    { url: '/iuran/tagihan', label: '📋 Tagihan', key: 'tagihan' },
+    { url: '/iuran/generate', label: '⚙️ Generate Massal', key: 'generate' },
+    { url: '/iuran/pembayaran', label: '💳 Pembayaran', key: 'pembayaran' },
+    { url: '/iuran/jenis', label: '🏷️ Jenis Iuran', key: 'jenis' }
+  ],
+  active: 'generate'
+}) %>
+
+<div class="info-box info-box-warning">
+  <strong>⚠️ Perhatian:</strong>
+  Proses ini bersifat <em>idempotent</em> — KK yang sudah memiliki tagihan pada periode yang sama
+  akan <strong>dilewati</strong> secara otomatis, sehingga tidak terjadi tagihan ganda.
+    </div>
+</div>
+</div>
+
+<form method="POST" action="/iuran/generate" class="form-layout">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <div class="card">
+    <div class="card-header"><h3>Parameter Tagihan</h3></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group form-group-full">
+          <label for="jenis_iuran_id">Jenis Iuran <span class="req">*</span></label>
+          <select id="jenis_iuran_id" name="jenis_iuran_id" class="form-control" required>
+            <option value="">— Pilih Jenis Iuran —</option>
+            <% jenisOptions.forEach(function(j){ %>
+              <option value="<%= j.id %>" data-nominal="<%= j.nominal %>" data-periode="<%= j.periode %>">
+                <%= j.nama %> — <%= fmt.rupiah(j.nominal) %> (<%= j.periode %>)
+              </option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="periode_bulan">Bulan <span class="req">*</span></label>
+          <select id="periode_bulan" name="periode_bulan" class="form-control" required>
+            <% fmt.NAMA_BULAN.forEach(function(b, i){ %>
+              <option value="<%= i + 1 %>" <%= (i + 1) === defaultBulan ? 'selected' : '' %>><%= b %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="periode_tahun">Tahun <span class="req">*</span></label>
+          <select id="periode_tahun" name="periode_tahun" class="form-control" required>
+            <% tahunOptions.forEach(function(t){ %>
+              <option value="<%= t %>" <%= t === defaultTahun ? 'selected' : '' %>><%= t %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="jatuh_tempo">Jatuh Tempo</label>
+          <input type="date" id="jatuh_tempo" name="jatuh_tempo" class="form-control">
+          <small class="form-hint">Kosongkan untuk default tanggal 10 pada bulan tersebut.</small>
+        </div>
+      </div>
+
+      <div class="preview-box" id="previewBox">
+        <div class="preview-title">Ringkasan yang akan dibuat</div>
+        <div class="preview-grid">
+          <div class="preview-item">
+            <span class="preview-label">Jenis Iuran</span>
+            <span class="preview-value" id="pvJenis">—</span>
+          </div>
+          <div class="preview-item">
+            <span class="preview-label">Nominal per KK</span>
+            <span class="preview-value" id="pvNominal">—</span>
+          </div>
+          <div class="preview-item">
+            <span class="preview-label">Periode</span>
+            <span class="preview-value" id="pvPeriode">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary" id="btnGenerate">⚙️ Generate Tagihan</button>
+    <a href="/iuran/tagihan" class="btn btn-ghost">Batal</a>
+  </div>
+</form>
+
+<script>
+  (function () {
+    var sel = document.getElementById('jenis_iuran_id');
+    var bulanSel = document.getElementById('periode_bulan');
+    var tahunSel = document.getElementById('periode_tahun');
+    var pvJenis = document.getElementById('pvJenis');
+    var pvNominal = document.getElementById('pvNominal');
+    var pvPeriode = document.getElementById('pvPeriode');
+
+    function rupiah(n) {
+      return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+    }
+
+    function updatePreview() {
+      var opt = sel.options[sel.selectedIndex];
+      var bulanNama = bulanSel.options[bulanSel.selectedIndex].text;
+      pvJenis.textContent = opt && opt.value ? opt.text.split(' — ')[0] : '—';
+      pvNominal.textContent = opt && opt.dataset.nominal ? rupiah(opt.dataset.nominal) : '—';
+      pvPeriode.textContent = bulanNama + ' ' + tahunSel.value;
+    }
+
+    [sel, bulanSel, tahunSel].forEach(function (el) {
+      el.addEventListener('change', updatePreview);
+    });
+    updatePreview();
+
+    // Cegah submit ganda
+    document.querySelector('form').addEventListener('submit', function () {
+      var btn = document.getElementById('btnGenerate');
+      btn.disabled = true;
+      btn.textContent = '⏳ Memproses...';
+    });
+  })();
+</script>

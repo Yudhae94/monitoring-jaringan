@@ -1,0 +1,116 @@
+<%
+  const isEdit = Boolean(trx);
+  const action = isEdit ? `/kas/${trx.id}` : '/kas';
+  const v = (field, fallback) => {
+    if (isEdit) return trx[field] === null || trx[field] === undefined ? '' : trx[field];
+    return typeof fallback !== 'undefined' ? fallback : '';
+  };
+%>
+
+<div class="page-head">
+  <div>
+    <h2><%= isEdit ? 'Edit Transaksi Kas' : 'Tambah Transaksi Kas' %></h2>
+    <p class="page-desc">Catat pemasukan atau pengeluaran kas RT.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/kas" class="btn btn-ghost">← Kembali</a>
+  </div>
+</div>
+
+<form method="POST" action="<%= action %>" class="form-layout">
+
+
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (isEdit) { %><input type="hidden" name="_method" value="PUT"><% } %>
+
+  <div class="card">
+    <div class="card-header"><h3>Detail Transaksi</h3>  </div>
+
+
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="tipe">Tipe Transaksi <span class="req">*</span></label>
+          <select id="tipe" name="tipe" class="form-control" required>
+            <option value="masuk" <%= v('tipe', 'masuk') === 'masuk' ? 'selected' : '' %>>📥 Pemasukan</option>
+            <option value="keluar" <%= v('tipe') === 'keluar' ? 'selected' : '' %>>📤 Pengeluaran</option>
+          </select>
+  </div>
+
+        <div class="form-group">
+          <label for="tanggal">Tanggal <span class="req">*</span></label>
+          <input type="date" id="tanggal" name="tanggal" class="form-control"
+                 value="<%= fmt.toDateInput(v('tanggal', new Date())) %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="nominal">Nominal (Rp) <span class="req">*</span></label>
+          <input type="number" id="nominal" name="nominal" class="form-control"
+                 value="<%= v('nominal') %>" required min="1" step="500" placeholder="100000">
+        </div>
+
+        <div class="form-group">
+          <label for="kategori_id">Kategori</label>
+          <select id="kategori_id" name="kategori_id" class="form-control">
+            <option value="">— Tanpa Kategori —</option>
+            <% kategoriOptions.forEach(function(k){ %>
+              <option value="<%= k.id %>"
+                      data-tipe="<%= k.tipe %>"
+                      <%= String(v('kategori_id')) === String(k.id) ? 'selected' : '' %>>
+                <%= k.nama %> (<%= k.tipe === 'masuk' ? 'masuk' : 'keluar' %>)
+              </option>
+            <% }); %>
+          </select>
+          <small class="form-hint">Kategori otomatis difilter sesuai tipe transaksi.</small>
+        </div>
+
+        <div class="form-group form-group-full">
+          <label for="keterangan">Keterangan <span class="req">*</span></label>
+          <input type="text" id="keterangan" name="keterangan" class="form-control"
+                 value="<%= v('keterangan') %>" required maxlength="255"
+                 placeholder="Contoh: Pembayaran jasa angkut sampah bulan September">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary"><%= isEdit ? '💾 Simpan Perubahan' : '+ Simpan Transaksi' %></button>
+    <a href="/kas" class="btn btn-ghost">Batal</a>
+  </div>
+</form>
+
+<script>
+  (function () {
+    var tipeSel = document.getElementById('tipe');
+    var katSel = document.getElementById('kategori_id');
+
+    // Simpan semua opsi kategori asli
+    var allOptions = Array.prototype.slice.call(katSel.querySelectorAll('option[data-tipe]'));
+
+    function filterKategori() {
+      var tipe = tipeSel.value;
+      var current = katSel.value;
+
+      // Hapus opsi kategori lama (sisakan placeholder)
+      Array.prototype.slice.call(katSel.querySelectorAll('option[data-tipe]')).forEach(function (o) {
+        o.remove();
+      });
+
+      allOptions.forEach(function (o) {
+        if (o.dataset.tipe === tipe) {
+          katSel.appendChild(o.cloneNode(true));
+        }
+      });
+
+      // Kembalikan pilihan bila masih sesuai tipe
+      var masihAda = Array.prototype.slice.call(katSel.options).some(function (o) {
+        return o.value === current;
+      });
+      katSel.value = masihAda ? current : '';
+    }
+
+    tipeSel.addEventListener('change', filterKategori);
+    filterKategori();
+  })();
+</script>

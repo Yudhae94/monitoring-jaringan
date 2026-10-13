@@ -1,0 +1,105 @@
+<%
+  const isEdit = Boolean(kk);
+  const action = isEdit ? `/kartu-keluarga/${kk.id}` : '/kartu-keluarga';
+  const v = (field, fallback) => {
+    if (isEdit) return kk[field] === null || kk[field] === undefined ? '' : kk[field];
+    return typeof fallback !== 'undefined' ? fallback : '';
+  };
+%>
+
+<div class="page-head">
+  <div>
+    <h2><%= isEdit ? 'Edit Kartu Keluarga' : 'Tambah Kartu Keluarga' %></h2>
+    <p class="page-desc"><%= isEdit ? 'Perbarui data kartu keluarga.' : 'Daftarkan kartu keluarga baru ke sistem.' %></p>
+  </div>
+  <div class="page-actions">
+    <a href="<%= isEdit ? '/kartu-keluarga/' + kk.id : '/kartu-keluarga' %>" class="btn btn-ghost">← Kembali</a>
+
+
+<form method="POST" action="<%= action %>" class="form-layout">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (isEdit) { %><input type="hidden" name="_method" value="PUT"><% } %>
+
+  <div class="card">
+    <div class="card-header"><h3>Data Kartu Keluarga</h3>  </div>
+</div>
+</div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="no_kk">Nomor Kartu Keluarga <span class="req">*</span></label>
+          <input type="text" id="no_kk" name="no_kk" class="form-control"
+                 value="<%= v('no_kk') %>" required maxlength="16" pattern="\d{16}"
+                 inputmode="numeric" placeholder="16 digit angka">
+          <small class="form-hint">Harus tepat 16 digit angka sesuai dokumen resmi.</small>
+  </div>
+
+        <div class="form-group">
+          <label for="kepala_keluarga">Nama Kepala Keluarga <span class="req">*</span></label>
+          <input type="text" id="kepala_keluarga" name="kepala_keluarga" class="form-control"
+                 value="<%= v('kepala_keluarga') %>" required maxlength="100" placeholder="Nama lengkap">
+        </div>
+
+        <div class="form-group form-group-full">
+          <label for="alamat">Alamat <span class="req">*</span></label>
+          <input type="text" id="alamat" name="alamat" class="form-control"
+                 value="<%= v('alamat', rt.alamat) %>" required maxlength="200"
+                 placeholder="Jl. Contoh No. 1">
+        </div>
+
+        <div class="form-group">
+          <label for="blok">Blok</label>
+          <input type="text" id="blok" name="blok" class="form-control"
+                 value="<%= v('blok') %>" maxlength="10" placeholder="A">
+        </div>
+
+        <div class="form-group">
+          <label for="no_rumah">Nomor Rumah</label>
+          <input type="text" id="no_rumah" name="no_rumah" class="form-control"
+                 value="<%= v('no_rumah') %>" maxlength="10" placeholder="12">
+        </div>
+
+        <div class="form-group">
+          <label for="rt">RT</label>
+          <input type="text" id="rt" name="rt" class="form-control"
+                 value="<%= v('rt', rt.number) %>" maxlength="5">
+        </div>
+
+        <div class="form-group">
+          <label for="rw">RW</label>
+          <input type="text" id="rw" name="rw" class="form-control"
+                 value="<%= v('rw', rt.rw) %>" maxlength="5">
+        </div>
+
+        <div class="form-group">
+          <label for="kode_pos">Kode Pos</label>
+          <input type="text" id="kode_pos" name="kode_pos" class="form-control"
+                 value="<%= v('kode_pos', rt.kodePos) %>" maxlength="8">
+        </div>
+
+        <div class="form-group">
+          <label for="status_rumah">Status Rumah <span class="req">*</span></label>
+          <select id="status_rumah" name="status_rumah" class="form-control" required>
+            <option value="milik" <%= v('status_rumah', 'milik') === 'milik' ? 'selected' : '' %>>Milik Sendiri</option>
+            <option value="sewa" <%= v('status_rumah') === 'sewa' ? 'selected' : '' %>>Sewa</option>
+            <option value="kontrak" <%= v('status_rumah') === 'kontrak' ? 'selected' : '' %>>Kontrak</option>
+            <option value="numpang" <%= v('status_rumah') === 'numpang' ? 'selected' : '' %>>Numpang</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary"><%= isEdit ? '💾 Simpan Perubahan' : '+ Simpan KK' %></button>
+    <a href="/kartu-keluarga" class="btn btn-ghost">Batal</a>
+  </div>
+</form>
+
+<% if (!isEdit) { %>
+  <div class="info-box">
+    <strong>ℹ️ Langkah selanjutnya:</strong>
+    Setelah KK tersimpan, tambahkan anggota keluarganya melalui menu
+    <a href="/warga" class="link">Data Warga</a>.
+  </div>
+<% } %>

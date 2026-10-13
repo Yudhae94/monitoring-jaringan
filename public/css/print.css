@@ -1,0 +1,201 @@
+/* =========================================================
+   Stylesheet khusus halaman cetak (laporan)
+   A4 portrait, siap print / simpan PDF
+   ========================================================= */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 11.5pt;
+  line-height: 1.5;
+  color: #000;
+  background: #f1f5f9;
+  padding: 20px;
+}
+
+.sheet {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  background: #fff;
+  padding: 15mm 15mm 18mm 18mm;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .12);
+}
+
+/* ---------- KOP SURAT ---------- */
+.kop {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 8px;
+}
+.kop-logo {
+  width: 66px; height: 66px;
+  flex-shrink: 0;
+  display: grid; place-items: center;
+  font-size: 36px;
+}
+.kop-text { flex: 1; text-align: center; }
+.kop-text .l1 { font-size: 11.5pt; letter-spacing: .5px; }
+.kop-text .l2 { font-size: 14pt; font-weight: bold; letter-spacing: .5px; }
+.kop-text .l3 { font-size: 11.5pt; }
+.kop-text .l4 { font-size: 8.5pt; font-style: italic; }
+.kop-line { border-bottom: 3px double #000; margin-bottom: 16px; }
+
+/* ---------- JUDUL ---------- */
+.judul { text-align: center; margin-bottom: 18px; }
+.judul h1 {
+  font-size: 13.5pt;
+  font-weight: bold;
+  text-decoration: underline;
+  letter-spacing: .5px;
+}
+.judul .periode { font-size: 11pt; margin-top: 3px; }
+
+/* ---------- SECTION ---------- */
+.section-title {
+  font-size: 11pt;
+  font-weight: bold;
+  margin: 16px 0 7px;
+  text-transform: uppercase;
+}
+
+/* ---------- TABEL ---------- */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5pt;
+  margin-bottom: 12px;
+}
+.tbl td, .tbl th { padding: 4px 7px; vertical-align: top; }
+
+.tbl-grid th, .tbl-grid td { border: 1px solid #333; }
+.tbl-grid th {
+  background: #e8e8e8;
+  font-weight: bold;
+  text-align: center;
+  font-size: 10pt;
+  padding: 5px 6px;
+}
+.tbl-grid tbody tr:nth-child(even) { background: #fafafa; }
+
+.tbl .w-label { width: 55%; }
+.tbl .w-num { width: 45%; text-align: right; }
+.tbl .w-no { width: 34px; text-align: center; }
+.tbl .w-date { width: 82px; }
+.tbl .w-acc { width: 105px; }
+.tbl .w-money { width: 105px; text-align: right; }
+
+.row-total td {
+  font-weight: bold;
+  background: #e8e8e8 !important;
+  border-top: 2px solid #333 !important;
+}
+
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+
+/* ---------- RINGKASAN BOX ---------- */
+.summary-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.summary-box {
+  flex: 1;
+  border: 1px solid #333;
+  padding: 8px 11px;
+  text-align: center;
+}
+.summary-label { display: block; font-size: 9pt; }
+.summary-value { display: block; font-size: 12.5pt; font-weight: bold; margin-top: 3px; }
+
+/* ---------- DUA KOLOM ---------- */
+.two-col { display: flex; gap: 16px; }
+.two-col > div { flex: 1; }
+
+/* ---------- TANDA TANGAN ---------- */
+.ttd-wrap {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 34px;
+  page-break-inside: avoid;
+}
+.ttd-block { text-align: center; width: 42%; }
+.ttd-city { font-size: 10.5pt; }
+.ttd-role { font-size: 10.5pt; margin-top: 2px; }
+.ttd-space { height: 58px; }
+.ttd-name {
+  font-weight: bold;
+  text-decoration: underline;
+  font-size: 11pt;
+}
+
+/* ---------- FOOTER DOKUMEN ---------- */
+.doc-footer {
+  margin-top: 26px;
+  padding-top: 8px;
+  border-top: 1px dashed #999;
+  font-family: Arial, sans-serif;
+  font-size: 8pt;
+  color: #666;
+  text-align: center;
+}
+
+/* ---------- TOOLBAR (tidak dicetak) ---------- */
+.toolbar {
+  position: fixed;
+  top: 14px; right: 14px;
+  display: flex;
+  gap: 8px;
+  font-family: Arial, sans-serif;
+  z-index: 99;
+}
+.toolbar button, .toolbar a {
+  padding: 9px 17px;
+  border-radius: 8px;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn-print { background: #2563eb; color: #fff; }
+.btn-print:hover { background: #1d4ed8; }
+.btn-back { background: #e2e8f0; color: #334155; }
+.btn-back:hover { background: #cbd5e1; }
+
+/* ---------- PRINT ---------- */
+@media print {
+  body {
+    background: #fff;
+    padding: 0;
+    font-size: 11pt;
+  }
+  .sheet {
+    width: auto;
+    min-height: auto;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .no-print { display: none !important; }
+  .tbl { page-break-inside: auto; }
+  .tbl tr { page-break-inside: avoid; page-break-after: auto; }
+  .tbl thead { display: table-header-group; }
+  .section-title { page-break-after: avoid; }
+  @page { size: A4 portrait; margin: 15mm 15mm 18mm 18mm; }
+}
+
+/* ---------- RESPONSIVE (layar kecil) ---------- */
+@media screen and (max-width: 820px) {
+  .sheet { width: 100%; min-height: auto; padding: 16px; }
+  .toolbar { position: static; justify-content: center; margin-bottom: 14px; }
+  .two-col { flex-direction: column; }
+  .summary-row { flex-direction: column; }
+  .ttd-wrap { flex-direction: column; gap: 28px; align-items: center; }
+  .ttd-block { width: 100%; }
+  .kop { flex-direction: column; text-align: center; }
+}

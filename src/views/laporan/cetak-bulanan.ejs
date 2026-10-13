@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title><%= laporan.judul %> — <%= laporan.rt.label %></title>
+  <link rel="stylesheet" href="/css/print.css">
+</head>
+<body>
+
+  <div class="toolbar no-print">
+    <a href="/laporan/bulanan?bulan=<%= laporan.periode.bulan %>&tahun=<%= laporan.periode.tahun %>" class="btn-back">← Kembali</a>
+    <button type="button" class="btn-print" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+  </div>
+
+  <div class="sheet">
+
+    <!-- KOP -->
+    <div class="kop">
+      <div class="kop-logo">🏘️</div>
+      <div class="kop-text">
+        <div class="l1">PENGURUS RUKUN TETANGGA <%= laporan.rt.number %> / RUKUN WARGA <%= laporan.rt.rw %></div>
+        <div class="l2">KELURAHAN <%= laporan.rt.kelurahan.toUpperCase() %> KECAMATAN <%= laporan.rt.kecamatan.toUpperCase() %></div>
+        <div class="l3"><%= laporan.rt.kota.toUpperCase() %>, <%= laporan.rt.provinsi.toUpperCase() %></div>
+        <div class="l4"><%= laporan.rt.alamat %>, Kode Pos <%= laporan.rt.kodePos %></div>
+      </div>
+    </div>
+    <div class="kop-line"></div>
+
+    <!-- JUDUL -->
+    <div class="judul">
+      <h1><%= laporan.judul.toUpperCase() %></h1>
+      <div class="periode">Periode: <%= fmt.namaBulan(laporan.periode.bulan) %> <%= laporan.periode.tahun %></div>
+    </div>
+
+    <!-- RINGKASAN -->
+    <h2 class="section-title">A. RINGKASAN KEUANGAN</h2>
+    <table class="tbl">
+      <tbody>
+        <tr>
+          <td class="w-label">Saldo Awal Periode</td>
+          <td class="w-num"><%= fmt.rupiah(laporan.saldoAwal) %></td>
+        </tr>
+        <tr>
+          <td>Total Pemasukan</td>
+          <td class="w-num"><%= fmt.rupiah(laporan.kas.total_masuk) %></td>
+        </tr>
+        <tr>
+          <td>Total Pengeluaran</td>
+          <td class="w-num">(<%= fmt.rupiah(laporan.kas.total_keluar) %>)</td>
+        </tr>
+        <tr class="row-total">
+          <td>SALDO AKHIR PERIODE</td>
+          <td class="w-num"><%= fmt.rupiah(laporan.saldoAkhir) %></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 class="section-title">B. RINGKASAN IURAN</h2>
+    <table class="tbl">
+      <tbody>
+        <tr>
+          <td class="w-label">Jumlah Tagihan</td>
+          <td class="w-num"><%= laporan.iuran.jumlah_tagihan %> tagihan</td>
+        </tr>
+        <tr>
+          <td>Total Target Iuran</td>
+          <td class="w-num"><%= fmt.rupiah(laporan.iuran.total_nominal) %></td>
+        </tr>
+        <tr>
+          <td>Realisasi Penerimaan</td>
+          <td class="w-num"><%= fmt.rupiah(laporan.iuran.total_terbayar) %></td>
+        </tr>
+        <tr>
+          <td>Tunggakan</td>
+          <td class="w-num"><%= fmt.rupiah(laporan.iuran.total_tunggakan) %></td>
+        </tr>
+        <tr class="row-total">
+          <td>PERSENTASE REALISASI</td>
+          <td class="w-num">
+            <%= laporan.iuran.total_nominal > 0
+              ? Math.round((laporan.iuran.total_terbayar / laporan.iuran.total_nominal) * 100)
+              : 0 %>%
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- RINCIAN -->
+    <h2 class="section-title">C. RINCIAN TRANSAKSI KAS</h2>
+    <table class="tbl tbl-grid">
+      <thead>
+        <tr>
+          <th class="w-no">No</th>
+          <th class="w-date">Tanggal</th>
+          <th>Keterangan</th>
+          <th class="w-acc">Kategori</th>
+          <th class="w-money">Masuk</th>
+          <th class="w-money">Keluar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (laporan.rincian.length === 0) { %>
+          <tr><td colspan="6" class="text-center">Tidak ada transaksi pada periode ini.</td></tr>
+        <% } else { %>
+          <% laporan.rincian.slice().reverse().forEach(function(k, i){ %>
+            <tr>
+              <td class="text-center"><%= i + 1 %></td>
+              <td><%= fmt.tanggalID(k.tanggal) %></td>
+              <td><%= k.keterangan %></td>
+              <td><%= k.kategori_nama || '-' %></td>
+              <td class="text-right"><%= k.tipe === 'masuk' ? fmt.rupiah(k.nominal) : '-' %></td>
+              <td class="text-right"><%= k.tipe === 'keluar' ? fmt.rupiah(k.nominal) : '-' %></td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+      <tfoot>
+        <tr class="row-total">
+          <td colspan="4" class="text-right">TOTAL</td>
+          <td class="text-right"><%= fmt.rupiah(laporan.kas.total_masuk) %></td>
+          <td class="text-right"><%= fmt.rupiah(laporan.kas.total_keluar) %></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- PEMBAYARAN IURAN -->
+    <h2 class="section-title">D. PENERIMAAN IURAN</h2>
+    <table class="tbl tbl-grid">
+      <thead>
+        <tr>
+          <th class="w-no">No</th>
+          <th class="w-date">Tanggal</th>
+          <th>Kartu Keluarga</th>
+          <th class="w-acc">Jenis Iuran</th>
+          <th class="w-acc">Metode</th>
+          <th class="w-money">Nominal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (laporan.pembayaran.length === 0) { %>
+          <tr><td colspan="6" class="text-center">Tidak ada pembayaran iuran pada periode ini.</td></tr>
+        <% } else { %>
+          <% laporan.pembayaran.forEach(function(p, i){ %>
+            <tr>
+              <td class="text-center"><%= i + 1 %></td>
+              <td><%= fmt.tanggalID(p.tanggal) %></td>
+              <td><%= p.kepala_keluarga %> (No. <%= p.no_rumah || '-' %>)</td>
+              <td><%= p.jenis_nama %></td>
+              <td class="text-center"><%= p.method === 'cash' ? 'Tunai' : 'Transfer' %></td>
+              <td class="text-right"><%= fmt.rupiah(p.nominal) %></td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+      <tfoot>
+        <tr class="row-total">
+          <td colspan="5" class="text-right">TOTAL PENERIMAAN IURAN</td>
+          <td class="text-right"><%= fmt.rupiah(laporan.pembayaran.reduce((s, p) => s + p.nominal, 0)) %></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- TTD -->
+    <div class="ttd-wrap">
+      <div class="ttd-block">
+        <div class="ttd-city"><%= laporan.rt.kota %>, <%= new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(tanggalCetak) %></div>
+        <div class="ttd-role">Bendahara <%= laporan.rt.label %></div>
+        <div class="ttd-space"></div>
+        <div class="ttd-name"><%= laporan.rt.bendahara %></div>
+      </div>
+      <div class="ttd-block">
+        <div class="ttd-city"><%= laporan.rt.kota %>, <%= new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(tanggalCetak) %></div>
+        <div class="ttd-role">Ketua <%= laporan.rt.label %></div>
+        <div class="ttd-space"></div>
+        <div class="ttd-name"><%= laporan.rt.ketua %></div>
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      Dicetak dari Sistem Informasi Manajemen RT pada
+      <%= new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(tanggalCetak) %> WIB
+    </div>
+  </div>
+
+</body>
+</html>

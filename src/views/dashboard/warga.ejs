@@ -1,0 +1,176 @@
+<% if (!warga) { %>
+  <div class="card">
+    <div class="card-body">
+      <div class="empty-state">
+        <div class="empty-icon">🔗</div>
+        <h4>Akun belum tertaut ke data warga</h4>
+        <p>Akun Anda belum dihubungkan ke data warga/KK oleh pengurus RT. Silakan hubungi Admin RT untuk menautkan akun Anda.</p>
+      </div>
+    </div>
+  </div>
+<% } else { %>
+
+<%
+  const statusBulanIni = {
+    lunas:        { label: 'Lunas', cls: 'success', icon: '✅' },
+    belum_lunas:  { label: 'Belum Lunas', cls: 'danger', icon: '⚠️' },
+    tidak_ada:    { label: 'Tidak Ada Tagihan', cls: 'neutral', icon: '➖' }
+  }[stats.status_bulan_ini];
+
+  const cards = [
+    { label: 'Status Bulan Ini', value: statusBulanIni.label, sub: `${fmt.namaBulan(periode.bulan)} ${periode.tahun}`, icon: statusBulanIni.icon, tone: statusBulanIni.cls === 'success' ? 'success' : (statusBulanIni.cls === 'danger' ? 'danger' : 'neutral') },
+    { label: 'Total Tunggakan', value: fmt.rupiah(stats.total_tunggakan), sub: `${stats.belum} tagihan belum lunas`, icon: '💸', tone: stats.total_tunggakan > 0 ? 'danger' : 'success' },
+    { label: 'Tagihan Lunas', value: `${stats.lunas} / ${stats.total_tagihan}`, sub: `Kepatuhan ${stats.persentase}%`, icon: '💰', tone: 'success' },
+    { label: 'Pengajuan Surat', value: fmt.rupiah(suratSaya.length, false), sub: 'Pengajuan terakhir Anda', icon: '✉️', tone: 'info' }
+  ];
+%>
+
+<!-- Kartu identitas warga -->
+<div class="hero-card">
+  <div class="hero-left">
+    <div class="hero-avatar"><%= warga.nama.charAt(0).toUpperCase() %></div>
+    <div>
+      <h2>Selamat datang, <%= warga.nama %></h2>
+      <p class="hero-sub">
+        <%= warga.status_keluarga === 'kepala_keluarga' ? 'Kepala Keluarga' : 'Anggota Keluarga' %>
+        · KK <%= warga.no_kk %>
+      </p>
+      <div class="hero-chips">
+        <span class="hero-chip">🏠 No. <%= warga.no_rumah || '-' %></span>
+        <span class="hero-chip">📍 <%= warga.alamat %></span>
+      </div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <a href="/surat/ajukan" class="btn btn-primary">✉️ Ajukan Surat</a>
+    <a href="/iuran/tagihan-saya" class="btn btn-ghost" onclick="event.preventDefault(); document.getElementById('tagihanSaya').scrollIntoView({behavior:'smooth'})">Lihat Tagihan</a>
+  </div>
+</div>
+
+<%- include('../partials/stat-card', { cards }) %>
+
+<div class="grid-2">
+  <!-- TAGIHAN -->
+  <div class="card" id="tagihanSaya">
+    <div class="card-header">
+      <h3>💰 Tagihan Iuran Terbaru</h3>
+    </div>
+    <div class="card-body no-pad">
+      <% if (tagihan.length === 0) { %>
+        <div class="empty-mini">Belum ada tagihan untuk keluarga Anda.</div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Jenis</th>
+                <th>Periode</th>
+                <th class="text-right">Nominal</th>
+                <th class="text-right">Terbayar</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% tagihan.forEach(function(t){ %>
+                <tr>
+                  <td><%= t.jenis_nama %></td>
+                  <td><%= fmt.namaBulan(t.periode_bulan, true) %> <%= t.periode_tahun %></td>
+                  <td class="text-right"><%= fmt.rupiah(t.nominal) %></td>
+                  <td class="text-right"><%= fmt.rupiah(t.terbayar) %></td>
+                  <td>
+                    <span class="badge badge-<%= {lunas:'success',sebagian:'warning',belum_bayar:'danger'}[t.status] %>">
+                      <%= {lunas:'Lunas',sebagian:'Sebagian',belum_bayar:'Belum Bayar'}[t.status] %>
+                    </span>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- PENGUMUMAN -->
+  <div class="card">
+    <div class="card-header">
+      <h3>📢 Pengumuman RT</h3>
+      <a href="/pengumuman" class="btn btn-ghost btn-sm">Semua →</a>
+    </div>
+    <div class="card-body">
+      <% if (pengumuman.length === 0) { %>
+        <div class="empty-mini">Belum ada pengumuman.</div>
+      <% } else { %>
+        <div class="announce-list">
+          <% pengumuman.forEach(function(p){ %>
+            <a href="/pengumuman/<%= p.id %>" class="announce-item announce-<%= p.prioritas %>">
+              <div class="announce-head">
+                <span class="badge badge-<%= p.prioritas === 'urgent' ? 'danger' : (p.prioritas === 'penting' ? 'warning' : 'neutral') %>">
+                  <%= p.prioritas.toUpperCase() %>
+                </span>
+                <span class="announce-date"><%= fmt.tanggalID(p.tanggal_mulai) %></span>
+              </div>
+              <h4><%= p.judul %></h4>
+              <p><%= p.isi.length > 90 ? p.isi.slice(0, 90) + '…' : p.isi %></p>
+            </a>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- RIWAYAT PEMBAYARAN -->
+  <div class="card">
+    <div class="card-header">
+      <h3>🧾 Riwayat Pembayaran Saya</h3>
+    </div>
+    <div class="card-body no-pad">
+      <% if (pembayaran.length === 0) { %>
+        <div class="empty-mini">Belum ada pembayaran tercatat.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% pembayaran.forEach(function(p){ %>
+            <div class="list-row">
+              <div class="list-main">
+                <strong><%= p.jenis_nama %></strong>
+                <small><%= fmt.namaBulan(p.periode_bulan, true) %> <%= p.periode_tahun %> · <%= fmt.tanggalID(p.tanggal) %></small>
+              </div>
+              <div class="list-value text-success"><%= fmt.rupiah(p.nominal) %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- SURAT SAYA -->
+  <div class="card">
+    <div class="card-header">
+      <h3>✉️ Pengajuan Surat Saya</h3>
+      <a href="/surat/ajukan" class="btn btn-primary btn-sm">+ Ajukan</a>
+    </div>
+    <div class="card-body no-pad">
+      <% if (suratSaya.length === 0) { %>
+        <div class="empty-mini">Anda belum pernah mengajukan surat.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% suratSaya.forEach(function(s){ %>
+            <a href="/surat/<%= s.id %>" class="list-row list-row-link">
+              <div class="list-main">
+                <strong><%= s.jenis_nama %></strong>
+                <small><%= s.no_surat %> · <%= fmt.tanggalID(s.tanggal_pengajuan) %></small>
+              </div>
+              <span class="badge badge-<%= {menunggu:'warning',diproses:'info',disetujui:'success',ditolak:'danger',selesai:'neutral'}[s.status] %>">
+                <%= {menunggu:'Menunggu',diproses:'Diproses',disetujui:'Disetujui',ditolak:'Ditolak',selesai:'Selesai'}[s.status] %>
+              </span>
+            </a>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<% } %>

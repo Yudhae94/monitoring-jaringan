@@ -1,0 +1,29 @@
+<%
+/**
+ * Partial kartu statistik.
+ * Parameter: cards = [{ label, value, sub, icon, tone, url }]
+ */
+  const toneMap = {
+    primary: 'stat-primary',
+    success: 'stat-success',
+    warning: 'stat-warning',
+    danger:  'stat-danger',
+    info:    'stat-info',
+    neutral: 'stat-neutral'
+  };
+%>
+
+<div class="stat-grid">
+  <% cards.forEach(function(c){ %>
+    <div class="stat-card <%= toneMap[c.tone] || 'stat-neutral' %>">
+      <div class="stat-icon"><%= c.icon || '📌' %></div>
+      <div class="stat-body">
+        <div class="stat-label"><%= c.label %></div>
+        <div class="stat-value"><%= c.value %></div>
+        <% if (c.sub) { %>
+          <div class="stat-sub"><%= c.sub %></div>
+        <% } %>
+      </div>
+    </div>
+  <% }); %>
+</div>

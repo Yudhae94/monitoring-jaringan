@@ -1,0 +1,61 @@
+<%
+/**
+ * Partial pagination.
+ * Variabel yang dibutuhkan: `pagination` (objek dari service), `baseUrl` (opsional)
+ */
+  const pg = pagination;
+  const base = typeof baseUrl !== 'undefined' ? baseUrl : currentPath;
+
+  // Bangun query string dengan mempertahankan filter yang aktif
+  function pageUrl(targetPage) {
+    const params = new URLSearchParams();
+    Object.keys(query || {}).forEach(function(k) {
+      if (k !== 'page' && query[k] !== '' && query[k] !== undefined && query[k] !== null) {
+        params.set(k, query[k]);
+      }
+    });
+    params.set('page', targetPage);
+    return base + '?' + params.toString();
+  }
+
+  // Rentang halaman yang ditampilkan (maks 5 nomor)
+  const startPage = Math.max(1, pg.page - 2);
+  const endPage = Math.min(pg.totalPages, startPage + 4);
+  const pages = [];
+  for (let i = startPage; i <= endPage; i += 1) pages.push(i);
+%>
+
+<% if (pg.total > 0) { %>
+<div class="pagination-wrap">
+  <div class="pagination-info">
+    Menampilkan <strong><%= pg.from %></strong>–<strong><%= pg.to %></strong>
+    dari <strong><%= pg.total %></strong> data
+  </div>
+
+  <% if (pg.totalPages > 1) { %>
+    <nav class="pagination" aria-label="Navigasi halaman">
+      <a class="page-btn <%= pg.hasPrev ? '' : 'disabled' %>"
+         href="<%= pg.hasPrev ? pageUrl(pg.page - 1) : '#' %>"
+         <%= pg.hasPrev ? '' : 'aria-disabled="true" tabindex="-1"' %>>‹</a>
+
+      <% if (startPage > 1) { %>
+        <a class="page-btn" href="<%= pageUrl(1) %>">1</a>
+        <% if (startPage > 2) { %><span class="page-dots">…</span><% } %>
+      <% } %>
+
+      <% pages.forEach(function(p){ %>
+        <a class="page-btn <%= p === pg.page ? 'active' : '' %>" href="<%= pageUrl(p) %>"><%= p %></a>
+      <% }); %>
+
+      <% if (endPage < pg.totalPages) { %>
+        <% if (endPage < pg.totalPages - 1) { %><span class="page-dots">…</span><% } %>
+        <a class="page-btn" href="<%= pageUrl(pg.totalPages) %>"><%= pg.totalPages %></a>
+      <% } %>
+
+      <a class="page-btn <%= pg.hasNext ? '' : 'disabled' %>"
+         href="<%= pg.hasNext ? pageUrl(pg.page + 1) : '#' %>"
+         <%= pg.hasNext ? '' : 'aria-disabled="true" tabindex="-1"' %>>›</a>
+    </nav>
+  <% } %>
+</div>
+<% } %>

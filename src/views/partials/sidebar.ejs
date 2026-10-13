@@ -1,0 +1,78 @@
+<%
+  const menu = [
+    { key: 'dashboard',     label: 'Dashboard',       icon: '📊', url: '/dashboard',        roles: ['admin','bendahara','warga'] },
+    { key: 'kartu-keluarga',label: 'Kartu Keluarga',  icon: '🏠', url: '/kartu-keluarga',   roles: ['admin','bendahara'] },
+    { key: 'warga',         label: 'Data Warga',      icon: '👥', url: '/warga',            roles: ['admin','bendahara'] },
+    { key: 'iuran',         label: 'Iuran & Tagihan', icon: '💰', url: '/iuran/tagihan',    roles: ['admin','bendahara'] },
+    { key: 'kas',           label: 'Kas RT',          icon: '🏦', url: '/kas',              roles: ['admin','bendahara'] },
+    { key: 'surat',         label: 'Surat Menyurat',  icon: '✉️', url: '/surat',            roles: ['admin','bendahara','warga'] },
+    { key: 'pengumuman',    label: 'Pengumuman',      icon: '📢', url: '/pengumuman',       roles: ['admin','bendahara','warga'] },
+    { key: 'laporan',       label: 'Laporan',         icon: '📑', url: '/laporan',          roles: ['admin','bendahara'] },
+    { key: 'pendaftaran',   label: 'Pendaftaran',     icon: '📥', url: '/pendaftaran',      roles: ['admin'] },
+    { key: 'users',         label: 'Manajemen User',  icon: '⚙️', url: '/users',            roles: ['admin'] }
+  ];
+
+  const roleLabel = { admin: 'Administrator', bendahara: 'Bendahara', warga: 'Warga' };
+  const visible = menu.filter(m => currentUser && m.roles.includes(currentUser.role));
+%>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-logo">🏘️</div>
+    <div class="brand-text">
+      <strong><%= app.name %></strong>
+      <small><%= rt.label %></small>
+    </div>
+  </div>
+
+  <div class="sidebar-rt-info">
+    <div class="rt-line">Kel. <%= rt.kelurahan %></div>
+    <div class="rt-line muted">Kec. <%= rt.kecamatan %></div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-title">Menu Utama</div>
+    <% visible.forEach(function(item){ %>
+      <a href="<%= item.url %>"
+         class="nav-item <%= activeMenu === item.key ? 'active' : '' %>
+                <%= item.key === 'dashboard' ? 'nav-dashboard' : '' %>
+                <%= item.key === 'kartu-keluarga' ? 'nav-kk' : '' %>
+                <%= item.key === 'warga' ? 'nav-warga' : '' %>
+                <%= item.key === 'iuran' ? 'nav-iuran' : '' %>
+                <%= item.key === 'kas' ? 'nav-kas' : '' %>
+                <%= item.key === 'surat' ? 'nav-surat' : '' %>
+                <%= item.key === 'pengumuman' ? 'nav-pengumuman' : '' %>
+                <%= item.key === 'laporan' ? 'nav-laporan' : '' %>
+                <%= item.key === 'users' ? 'nav-users' : '' %>">
+        <span class="nav-icon"><%= item.icon %></span>
+        <span class="nav-label"><%= item.label %></span>
+        <% if (item.key === 'pendaftaran' && pendingCount > 0) { %>
+          <span class="nav-badge"><%= pendingCount %></span>
+        <% } %>
+      </a>
+    <% }); %>
+
+    <div class="nav-section-title">Akun</div>
+    <a href="/profil" class="nav-item nav-profil <%= activeMenu === 'profil' ? 'active' : '' %>">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Profil Saya</span>
+    </a>
+    <form action="/logout" method="POST" class="logout-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" class="nav-item nav-logout">
+        <span class="nav-icon">🚪</span>
+        <span class="nav-label">Keluar</span>
+      </button>
+    </form>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="user-avatar"><%= currentUser ? currentUser.nama.charAt(0).toUpperCase() : '?' %></div>
+      <div class="user-meta">
+        <strong><%= currentUser ? currentUser.nama : 'Tamu' %></strong>
+        <small><%= currentUser ? (roleLabel[currentUser.role] || currentUser.role) : '-' %></small>
+      </div>
+    </div>
+  </div>
+</aside>

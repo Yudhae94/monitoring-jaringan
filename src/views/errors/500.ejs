@@ -1,0 +1,17 @@
+<div class="error-page">
+  <div class="error-code error-code-danger">500</div>
+  <h1>Terjadi Kesalahan</h1>
+  <p class="error-message"><%= typeof pesan !== 'undefined' ? pesan : 'Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.' %></p>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <details class="error-detail">
+      <summary>Detail teknis (mode development)</summary>
+      <pre><%= error.stack || error.message %></pre>
+    </details>
+  <% } %>
+
+  <div class="error-actions">
+    <a href="/dashboard" class="btn btn-primary">← Kembali ke Dashboard</a>
+    <a href="javascript:history.back()" class="btn btn-ghost">Halaman Sebelumnya</a>
+  </div>
+</div>

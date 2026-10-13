@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surat <%= surat.no_surat %> — <%= surat.nama_pemohon %></title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 12pt;
+      line-height: 1.6;
+      color: #000;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 24px;
+    }
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20mm 20mm 25mm 25mm;
+      box-shadow: 0 4px 24px rgba(0,0,0,.12);
+    }
+
+    /* ---------- KOP SURAT ---------- */
+    .kop {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 3px double #000;
+      padding-bottom: 10px;
+      margin-bottom: 4px;
+    }
+    .kop-logo {
+      width: 72px;
+      height: 72px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+    .kop-text { flex: 1; text-align: center; }
+    .kop-text .l1 { font-size: 12pt; letter-spacing: 1px; }
+    .kop-text .l2 { font-size: 15pt; font-weight: bold; letter-spacing: 1px; }
+    .kop-text .l3 { font-size: 12pt; }
+    .kop-text .l4 { font-size: 9pt; font-style: italic; }
+    .kop-line { border-bottom: 1px solid #000; margin-bottom: 22px; }
+
+    /* ---------- JUDUL ---------- */
+    .judul { text-align: center; margin-bottom: 6px; }
+    .judul h1 {
+      font-size: 14pt;
+      font-weight: bold;
+      text-decoration: underline;
+      letter-spacing: 1px;
+      margin: 0 0 4px;
+      text-transform: uppercase;
+    }
+    .judul .nomor { font-size: 12pt; }
+
+    /* ---------- ISI ---------- */
+    .isi { text-align: justify; margin-top: 24px; }
+    .isi p { margin: 0 0 10px; text-indent: 40px; }
+    .isi p.no-indent { text-indent: 0; }
+
+    .data-table {
+      width: 100%;
+      margin: 12px 0 12px 40px;
+      border-collapse: collapse;
+      width: calc(100% - 40px);
+    }
+    .data-table td { padding: 3px 0; vertical-align: top; }
+    .data-table td.label { width: 150px; }
+    .data-table td.sep { width: 12px; }
+
+    .highlight { font-weight: bold; text-decoration: underline; }
+
+    /* ---------- TANDA TANGAN ---------- */
+    .ttd-wrap {
+      margin-top: 40px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .ttd {
+      text-align: center;
+      width: 220px;
+    }
+    .ttd .kota { margin-bottom: 4px; }
+    .ttd .jabatan { margin-bottom: 64px; }
+    .ttd .nama {
+      font-weight: bold;
+      text-decoration: underline;
+      margin-bottom: 2px;
+    }
+    .ttd .nip { font-size: 10pt; }
+
+    /* ---------- FOOTER ---------- */
+    .catatan {
+      margin-top: 48px;
+      padding-top: 10px;
+      border-top: 1px dashed #999;
+      font-size: 9pt;
+      font-family: Arial, sans-serif;
+      color: #555;
+    }
+
+    /* ---------- TOOLBAR (tidak tercetak) ---------- */
+    .toolbar {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 8px;
+      font-family: Arial, sans-serif;
+    }
+    .toolbar button, .toolbar a {
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-print { background: #2563eb; color: #fff; }
+    .btn-print:hover { background: #1d4ed8; }
+    .btn-close { background: #e2e8f0; color: #334155; }
+    .btn-close:hover { background: #cbd5e1; }
+
+    @media print {
+      body { background: #fff; padding: 0; font-size: 12pt; }
+      .sheet { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; }
+      .toolbar { display: none !important; }
+      @page { size: A4; margin: 20mm 20mm 20mm 25mm; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <a href="/surat/<%= surat.id %>" class="btn-close">← Kembali</a>
+    <button type="button" class="btn-print" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+  </div>
+
+  <div class="sheet">
+
+    <!-- KOP SURAT -->
+    <div class="kop">
+      <div class="kop-logo">🏘️</div>
+      <div class="kop-text">
+        <div class="l1">PENGURUS RUKUN TETANGGA <%= rt.number %> / RUKUN WARGA <%= rt.rw %></div>
+        <div class="l2">KELURAHAN <%= rt.kelurahan.toUpperCase() %> KECAMATAN <%= rt.kecamatan.toUpperCase() %></div>
+        <div class="l3"><%= rt.kota.toUpperCase() %>, <%= rt.provinsi.toUpperCase() %></div>
+        <div class="l4"><%= rt.alamat %>, Kode Pos <%= rt.kodePos %></div>
+      </div>
+    </div>
+    <div class="kop-line"></div>
+
+    <!-- JUDUL SURAT -->
+    <div class="judul">
+      <h1><%= surat.jenis_nama %></h1>
+      <div class="nomor">Nomor: <%= surat.no_surat %></div>
+    </div>
+
+    <!-- ISI SURAT -->
+    <div class="isi">
+      <p class="no-indent">Yang bertanda tangan di bawah ini, Ketua RT <%= rt.number %> / RW <%= rt.rw %> Kelurahan <%= rt.kelurahan %>, Kecamatan <%= rt.kecamatan %>, <%= rt.kota %>, dengan ini menerangkan bahwa:</p>
+
+      <table class="data-table">
+        <tr>
+          <td class="label">Nama</td>
+          <td class="sep">:</td>
+          <td><span class="highlight"><%= surat.nama_pemohon %></span></td>
+        </tr>
+        <% if (surat.nik_pemohon) { %>
+        <tr>
+          <td class="label">NIK</td>
+          <td class="sep">:</td>
+          <td><%= surat.nik_pemohon %></td>
+        </tr>
+        <% } %>
+        <% if (surat.warga_nama) { %>
+        <tr>
+          <td class="label">Alamat</td>
+          <td class="sep">:</td>
+          <td><%= rt.alamat %>, RT <%= rt.number %> / RW <%= rt.rw %>, Kel. <%= rt.kelurahan %>, Kec. <%= rt.kecamatan %>, <%= rt.kota %></td>
+        </tr>
+        <% } %>
+        <% if (surat.no_hp) { %>
+        <tr>
+          <td class="label">Nomor HP</td>
+          <td class="sep">:</td>
+          <td><%= surat.no_hp %></td>
+        </tr>
+        <% } %>
+      </table>
+
+      <p class="no-indent">Bahwa nama tersebut di atas adalah benar warga yang berdomisili di wilayah RT <%= rt.number %> / RW <%= rt.rw %>, Kelurahan <%= rt.kelurahan %>, Kecamatan <%= rt.kecamatan %>, <%= rt.kota %>.</p>
+
+      <p class="no-indent">Surat keterangan ini dibuat untuk keperluan <strong><%= surat.keperluan %></strong>.</p>
+
+      <p class="no-indent">Demikian surat keterangan ini dibuat dengan sebenarnya, untuk dapat dipergunakan sebagaimana mestinya.</p>
+    </div>
+
+    <!-- TANDA TANGAN -->
+    <div class="ttd-wrap">
+      <div class="ttd">
+        <div class="kota"><%= rt.kota %>, <%= new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(tanggalCetak) %></div>
+        <div class="jabatan">Ketua RT <%= rt.number %> / RW <%= rt.rw %></div>
+        <div class="nama"><%= rt.ketua %></div>
+        <div class="nip">Ketua RT</div>
+      </div>
+    </div>
+
+    <div class="catatan">
+      <strong>Catatan:</strong> Surat ini diterbitkan secara elektronik melalui <%= app.fullName %> (<%= app.name %>)
+      pada <%= new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(tanggalCetak) %> WIB.
+      Status pengajuan: <strong><%= surat.status === 'selesai' ? 'SELESAI' : 'DISETUJUI' %></strong>.
+    </div>
+  </div>
+
+  <script>
+    // Auto-focus tombol cetak agar Ctrl+P langsung berfungsi
+    window.addEventListener('load', function () {
+      if (window.location.search.indexOf('auto=1') > -1) window.print();
+    });
+  </script>
+</body>
+</html>

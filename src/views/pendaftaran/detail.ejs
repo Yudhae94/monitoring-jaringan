@@ -1,0 +1,99 @@
+<%
+  const statusBadge = { menunggu: 'warning', disetujui: 'success', ditolak: 'danger' };
+  const statusLabel  = { menunggu: 'Menunggu', disetujui: 'Disetujui', ditolak: 'Ditolak' };
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Detail Pendaftaran</h2>
+    <p class="page-desc">Periksa data berikut sebelum menyetujui atau menolak.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/pendaftaran" class="btn btn-ghost">← Kembali ke Antrean</a>
+    <% if (row.status === 'menunggu') { %>
+      <form method="POST" action="/pendaftaran/<%= row.id %>/approve" class="inline-form"
+            onsubmit="return confirm('Setujui pendaftaran <%= row.nama %>? Akun warga akan langsung dibuat.')">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="btn btn-primary">✅ Setujui</button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Data pemohon -->
+  <div class="card">
+    <div class="card-header">
+      <h3>👤 Data Pemohon</h3>
+      <span class="badge badge-<%= statusBadge[row.status] %>"><%= statusLabel[row.status] %></span>
+    </div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Nama Lengkap</dt><dd><strong><%= row.nama %></strong></dd>
+        <dt>NIK</dt><dd><span class="code"><%= row.nik %></span></dd>
+        <dt>Jenis Kelamin</dt><dd><%= row.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan' %></dd>
+        <dt>Tempat, Tgl Lahir</dt>
+        <dd>
+          <%= row.tempat_lahir || '-' %><% if (row.tanggal_lahir) { %>, <%= fmt.tanggalID(row.tanggal_lahir) %><% } %>
+        </dd>
+        <dt>Email</dt><dd><%= row.email %></dd>
+        <dt>No. HP</dt><dd><%= row.no_hp || '-' %></dd>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Alamat & status -->
+  <div class="card">
+    <div class="card-header"><h3>🏠 Alamat &amp; Verifikasi</h3></div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Alamat</dt><dd><%= row.alamat %></dd>
+        <dt>No. Rumah</dt><dd><%= row.no_rumah || '-' %></dd>
+        <dt>Kartu Keluarga</dt>
+        <dd>
+          <% if (row.kk_id) { %>
+            <%= row.no_kk || '-' %> — <%= row.kepala_keluarga %>
+            <span class="badge badge-success">Akan ditambahkan</span>
+          <% } else { %>
+            <span class="text-muted">Tidak ditautkan</span><br>
+            <small class="form-hint">Akun tetap dibuat, data warga dilengkapi nanti oleh admin.</small>
+          <% } %>
+        </dd>
+        <dt>Tanggal Daftar</dt><dd><%= fmt.tanggalWaktu(row.created_at) %></dd>
+        <% if (row.tanggal_diverifikasi) { %>
+          <dt>Diproses</dt>
+          <dd><%= fmt.tanggalWaktu(row.tanggal_diverifikasi) %> <%= row.admin_nama ? ('oleh ' + row.admin_nama) : '' %></dd>
+        <% } %>
+      </dl>
+
+      <% if (row.status === 'ditolak' && row.alasan_menolak) { %>
+        <div class="alert alert-danger" style="margin-top:14px">
+          <span class="alert-icon">!</span>
+          <span><strong>Alasan ditolak:</strong> <%= row.alasan_menolak %></span>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<% if (row.status === 'menunggu') { %>
+  <div class="card" style="margin-top:20px">
+    <div class="card-header"><h3>❌ Tolak Pendaftaran</h3></div>
+    <div class="card-body">
+      <form method="POST" action="/pendaftaran/<%= row.id %>/reject" class="form-layout-narrow">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="form-group">
+          <label for="alasan">Alasan Penolakan <span class="req">*</span></label>
+          <textarea id="alasan" name="alasan" rows="3" class="form-control"
+                    placeholder="Jelaskan alasan penolakan agar pendaftar dapat memperbaiki data"
+                    required></textarea>
+          <small class="form-hint">Wajib diisi. Alasan ini tersimpan di riwayat pendaftaran.</small>
+        </div>
+        <div class="form-actions">
+          <a href="/pendaftaran" class="btn btn-ghost">Batal</a>
+          <button type="submit" class="btn btn-danger">Tolak Pendaftaran</button>
+        </div>
+      </form>
+    </div>
+  </div>
+<% } %>

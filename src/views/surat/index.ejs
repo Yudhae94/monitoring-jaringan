@@ -1,0 +1,119 @@
+<%
+  const statusLabel = { menunggu: 'Menunggu', diproses: 'Diproses', disetujui: 'Disetujui', ditolak: 'Ditolak', selesai: 'Selesai' };
+  const statusBadge = { menunggu: 'warning', diproses: 'info', disetujui: 'success', ditolak: 'danger', selesai: 'neutral' };
+
+  const isWarga = currentUser.role === 'warga';
+  const isPengurus = ['admin', 'bendahara'].includes(currentUser.role);
+
+  const cards = [
+    { label: 'Total Pengajuan', value: stats.total, icon: '✉️', tone: 'primary' },
+    { label: 'Menunggu', value: stats.menunggu, sub: 'perlu diproses', icon: '⏳', tone: 'warning' },
+    { label: 'Diproses', value: stats.diproses, icon: '🔄', tone: 'info' },
+    { label: 'Disetujui', value: stats.disetujui, icon: '✅', tone: 'success' },
+    { label: 'Ditolak', value: stats.ditolak, icon: '❌', tone: 'danger' },
+    { label: 'Selesai', value: stats.selesai, icon: '📁', tone: 'neutral' }
+  ];
+%>
+
+<div class="page-head">
+  <div>
+    <h2><%= isWarga ? 'Pengajuan Surat Saya' : 'Surat Menyurat' %></h2>
+    <p class="page-desc">
+      <%= isWarga
+        ? 'Daftar pengajuan surat yang Anda kirim ke pengurus RT.'
+        : 'Kelola pengajuan surat dari warga dan proses persetujuannya.' %>
+    </p>
+  </div>
+  <div class="page-actions">
+    <% if (isPengurus) { %>
+      <a href="/surat/jenis" class="btn btn-ghost">🏷️ Jenis Surat</a>
+    <% } %>
+    <a href="/surat/ajukan" class="btn btn-primary">+ Ajukan Surat</a>
+  </div>
+</div>
+
+<%- include('../partials/stat-card', { cards }) %>
+
+<%- include('../partials/filter-bar', {
+  action: '/surat',
+  resetUrl: '/surat',
+  fields: [
+    { name: 'q', label: 'Cari', type: 'search', value: filters.q, placeholder: 'No. surat, nama, keperluan…' },
+    { name: 'status', label: 'Status', type: 'select', value: filters.status, placeholder: 'Semua status',
+      options: Object.keys(statusLabel).map(k => ({ value: k, label: statusLabel[k] })) },
+    { name: 'jenis_surat_id', label: 'Jenis Surat', type: 'select', value: filters.jenis_surat_id, placeholder: 'Semua jenis',
+      options: jenisOptions.map(j => ({ value: j.id, label: j.nama })) }
+  ]
+}) %>
+
+<div class="card">
+  <div class="card-body no-pad">
+    <% if (data.length === 0) { %>
+      <%- include('../partials/empty-state', {
+        emptyIcon: '✉️',
+        emptyTitle: 'Belum ada pengajuan surat',
+        emptyMessage: isWarga
+          ? 'Anda belum pernah mengajukan surat. Mulai ajukan surat pertama Anda.'
+          : 'Belum ada pengajuan surat dari warga.',
+        emptyUrl: '/surat/ajukan',
+        emptyAction: '+ Ajukan Surat'
+      }) %>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>No. Surat</th>
+              <th>Pemohon</th>
+              <th>Jenis Surat</th>
+              <th>Keperluan</th>
+              <th>Tgl. Pengajuan</th>
+              <th>Status</th>
+              <th class="text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% data.forEach(function(s){ %>
+              <tr>
+                <td><code class="code code-sm"><%= s.no_surat %></code></td>
+                <td>
+                  <strong><%= s.nama_pemohon %></strong>
+                  <% if (s.no_hp) { %><small class="cell-sub"><%= s.no_hp %></small><% } %>
+                </td>
+                <td>
+                  <%= s.jenis_nama %>
+                  <small class="cell-sub"><%= s.jenis_kode %></small>
+                </td>
+                <td class="text-muted"><%= s.keperluan.length > 45 ? s.keperluan.slice(0, 45) + '…' : s.keperluan %></td>
+                <td><%= fmt.tanggalID(s.tanggal_pengajuan) %></td>
+                <td><span class="badge badge-<%= statusBadge[s.status] %>"><%= statusLabel[s.status] %></span></td>
+                <td class="text-right">
+                  <div class="action-group">
+                    <a href="/surat/<%= s.id %>" class="btn btn-ghost btn-xs" title="Detail">👁️</a>
+                    <% if (['disetujui', 'selesai'].includes(s.status)) { %>
+                      <a href="/surat/<%= s.id %>/cetak" target="_blank" class="btn btn-ghost btn-xs" title="Cetak surat">🖨️</a>
+                    <% } %>
+                    <% if (isPengurus && ['menunggu', 'ditolak'].includes(s.status)) { %>
+                      <button type="button" class="btn btn-ghost btn-xs" title="Hapus"
+                              data-confirm-form="/surat/<%= s.id %>"
+                              data-confirm-title="Hapus Pengajuan"
+                              data-confirm-message="Hapus pengajuan surat <%= s.no_surat %>?">🗑️</button>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/pagination', { pagination, baseUrl: '/surat' }) %>
+<%- include('../partials/modal-confirm', {
+  id: 'deleteModal',
+  title: 'Konfirmasi Hapus',
+  message: 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?',
+  action: '#'
+}) %>

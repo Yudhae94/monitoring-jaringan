@@ -1,0 +1,91 @@
+<%
+  const prioritasLabel = { normal: 'Normal', penting: 'Penting', urgent: 'Urgent' };
+  const prioritasBadge = { normal: 'neutral', penting: 'warning', urgent: 'danger' };
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Pengumuman</h2>
+    <p class="page-desc">Informasi dan pemberitahuan resmi dari pengurus <%= rt.label %>.</p>
+  </div>
+  <div class="page-actions">
+    <% if (canManage) { %>
+      <a href="/pengumuman/create" class="btn btn-primary">+ Buat Pengumuman</a>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/filter-bar', {
+  action: '/pengumuman',
+  resetUrl: '/pengumuman',
+  fields: [
+    { name: 'q', label: 'Cari', type: 'search', value: filters.q, placeholder: 'Judul atau isi…' },
+    { name: 'prioritas', label: 'Prioritas', type: 'select', value: filters.prioritas, placeholder: 'Semua prioritas',
+      options: [
+        { value: 'normal', label: 'Normal' },
+        { value: 'penting', label: 'Penting' },
+        { value: 'urgent', label: 'Urgent' }
+      ]},
+    { name: 'is_publish', label: 'Publikasi', type: 'select', value: filters.is_publish, placeholder: 'Semua',
+      options: [
+        { value: '1', label: 'Dipublikasikan' },
+        { value: '0', label: 'Draft' }
+      ]}
+  ]
+}) %>
+
+<% if (data.length === 0) { %>
+  <div class="card">
+    <div class="card-body">
+      <%- include('../partials/empty-state', {
+        emptyIcon: '📢',
+        emptyTitle: 'Belum ada pengumuman',
+        emptyMessage: canManage
+          ? 'Buat pengumuman pertama untuk warga.'
+          : 'Pengurus belum mempublikasikan pengumuman apapun.',
+        emptyUrl: canManage ? '/pengumuman/create' : '/pengumuman',
+        emptyAction: canManage ? '+ Buat Pengumuman' : null
+      }) %>
+  </div>
+  </div>
+<% } else { %>
+  <div class="announce-grid">
+    <% data.forEach(function(p){ %>
+      <div class="announce-card announce-<%= p.prioritas %> <%= p.is_publish ? '' : 'announce-draft' %>">
+        <div class="announce-head">
+          <span class="badge badge-<%= prioritasBadge[p.prioritas] %>"><%= prioritasLabel[p.prioritas] %></span>
+          <% if (!p.is_publish) { %>
+            <span class="badge badge-neutral">📝 Draft</span>
+          <% } %>
+          <span class="announce-date"><%= fmt.tanggalID(p.tanggal_mulai) %></span>
+        </div>
+
+        <h3><a href="/pengumuman/<%= p.id %>"><%= p.judul %></a></h3>
+
+        <p><%= p.isi.length > 160 ? p.isi.slice(0, 160) + '…' : p.isi %></p>
+
+        <div class="announce-foot">
+          <span class="announce-author">✍️ <%= p.penulis || 'Pengurus RT' %></span>
+          <div class="announce-actions">
+            <a href="/pengumuman/<%= p.id %>" class="btn btn-ghost btn-xs">Baca →</a>
+            <% if (canManage) { %>
+              <a href="/pengumuman/<%= p.id %>/edit" class="btn btn-ghost btn-xs" title="Edit">✏️</a>
+              <button type="button" class="btn btn-ghost btn-xs" title="Hapus"
+                      data-confirm-form="/pengumuman/<%= p.id %>"
+                      data-confirm-title="Hapus Pengumuman"
+                      data-confirm-message="Hapus pengumuman &quot;<%= p.judul %>&quot;?">🗑️</button>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<%- include('../partials/pagination', { pagination, baseUrl: '/pengumuman' }) %>
+<%- include('../partials/modal-confirm', {
+  id: 'deleteModal',
+  title: 'Konfirmasi Hapus',
+  message: 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?',
+  action: '#'
+}) %>

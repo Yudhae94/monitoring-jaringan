@@ -1,0 +1,98 @@
+<%
+  const statusRumahLabel = { milik: 'Milik Sendiri', sewa: 'Sewa', kontrak: 'Kontrak', numpang: 'Numpang' };
+  const statusRumahBadge = { milik: 'success', sewa: 'info', kontrak: 'warning', numpang: 'neutral' };
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Kartu Keluarga</h2>
+    <p class="page-desc">Data kepala keluarga dan anggotanya di lingkungan <%= rt.label %>.</p>
+  </div>
+  <div class="page-actions">
+    <% if (currentUser.role === 'admin') { %>
+      <a href="/kartu-keluarga/create" class="btn btn-primary">+ Tambah KK</a>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/filter-bar', {
+  action: '/kartu-keluarga',
+  resetUrl: '/kartu-keluarga',
+  fields: [
+    { name: 'q', label: 'Cari', type: 'search', value: filters.q, placeholder: 'No. KK, kepala keluarga, alamat…' },
+    { name: 'status_rumah', label: 'Status Rumah', type: 'select', value: filters.status_rumah, options: [
+      { value: 'milik', label: 'Milik Sendiri' },
+      { value: 'sewa', label: 'Sewa' },
+      { value: 'kontrak', label: 'Kontrak' },
+      { value: 'numpang', label: 'Numpang' }
+    ]}
+  ]
+}) %>
+
+<div class="card">
+  <div class="card-body no-pad">
+    <% if (data.length === 0) { %>
+      <%- include('../partials/empty-state', {
+        emptyIcon: '🏠',
+        emptyTitle: 'Belum ada Kartu Keluarga',
+        emptyMessage: filters.q || filters.status_rumah
+          ? 'Tidak ada KK yang cocok dengan filter Anda.'
+          : 'Mulai dengan menambahkan data Kartu Keluarga pertama.',
+        emptyUrl: currentUser.role === 'admin' ? '/kartu-keluarga/create' : '/kartu-keluarga',
+        emptyAction: currentUser.role === 'admin' ? '+ Tambah KK' : null
+      }) %>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>No. KK</th>
+              <th>Kepala Keluarga</th>
+              <th>Alamat</th>
+              <th>Blok / No.</th>
+              <th class="text-center">Anggota</th>
+              <th>Status Rumah</th>
+              <th class="text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% data.forEach(function(kk){ %>
+              <tr>
+                <td><code class="code"><%= kk.no_kk %></code></td>
+                <td><strong><%= kk.kepala_keluarga %></strong></td>
+                <td class="text-muted"><%= kk.alamat %></td>
+                <td><%= kk.blok || '-' %> / <%= kk.no_rumah || '-' %></td>
+                <td class="text-center"><span class="badge badge-info"><%= kk.jumlah_anggota %> orang</span></td>
+                <td>
+                  <span class="badge badge-<%= statusRumahBadge[kk.status_rumah] %>">
+                    <%= statusRumahLabel[kk.status_rumah] %>
+                  </span>
+                </td>
+                <td class="text-right">
+                  <div class="action-group">
+                    <a href="/kartu-keluarga/<%= kk.id %>" class="btn btn-ghost btn-xs" title="Detail">👁️</a>
+                    <% if (currentUser.role === 'admin') { %>
+                      <a href="/kartu-keluarga/<%= kk.id %>/edit" class="btn btn-ghost btn-xs" title="Edit">✏️</a>
+                      <button type="button" class="btn btn-ghost btn-xs" title="Hapus"
+                              data-confirm-form="/kartu-keluarga/<%= kk.id %>"
+                              data-confirm-title="Hapus Kartu Keluarga"
+                              data-confirm-message="Hapus KK &quot;<%= kk.kepala_keluarga %>&quot;? Pastikan tidak ada anggota aktif.">🗑️</button>
+                    <% } %>
+  </div>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/pagination', { pagination, baseUrl: '/kartu-keluarga' }) %>
+<%- include('../partials/modal-confirm', {
+  id: 'deleteModal',
+  title: 'Konfirmasi Hapus',
+  message: 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?',
+  action: '#'
+}) %>

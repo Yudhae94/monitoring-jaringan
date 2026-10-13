@@ -1,0 +1,182 @@
+<%
+  const cards = [
+    { label: 'Total Tagihan', value: fmt.rupiah(ringkasan.iuran.total_nominal), sub: `${ringkasan.iuran.jumlah_tagihan} tagihan`, icon: '📋', tone: 'primary' },
+    { label: 'Realisasi Iuran', value: fmt.rupiah(ringkasan.iuran.total_terbayar), sub: `${ringkasan.iuran.jumlah_lunas} tagihan lunas`, icon: '✅', tone: 'success' },
+    { label: 'Tunggakan', value: fmt.rupiah(ringkasan.iuran.total_tunggakan), sub: `${ringkasan.iuran.jumlah_belum + ringkasan.iuran.jumlah_sebagian} belum lunas`, icon: '⚠️', tone: 'danger' },
+    { label: 'Pemasukan Kas', value: fmt.rupiah(ringkasan.kas.total_masuk), icon: '📥', tone: 'success' },
+    { label: 'Pengeluaran Kas', value: fmt.rupiah(ringkasan.kas.total_keluar), icon: '📤', tone: 'danger' },
+    { label: 'Saldo', value: fmt.rupiah(ringkasan.kas.saldo), sub: ringkasan.kas.saldo >= 0 ? 'Surplus' : 'Defisit', icon: '🏦', tone: ringkasan.kas.saldo >= 0 ? 'success' : 'danger' }
+  ];
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Laporan</h2>
+    <p class="page-desc">Pusat laporan keuangan dan administrasi <%= rt.label %>.</p>
+  </div>
+</div>
+
+<%- include('../partials/filter-bar', {
+  action: '/laporan',
+  resetUrl: '/laporan',
+  fields: [
+    { name: 'bulan', label: 'Bulan', type: 'select', value: filters.bulan, placeholder: 'Semua bulan',
+      options: fmt.NAMA_BULAN.map((b, i) => ({ value: i + 1, label: b })) },
+    { name: 'tahun', label: 'Tahun', type: 'select', value: filters.tahun, placeholder: 'Semua tahun',
+      options: tahunOptions.map(t => ({ value: t, label: t })) }
+  ]
+}) %>
+
+<%- include('../partials/stat-card', { cards }) %>
+
+<!-- Menu laporan -->
+<div class="report-menu">
+  <a href="/laporan/bulanan?bulan=<%= filters.bulan %>&tahun=<%= filters.tahun %>" class="report-card">
+    <div class="report-icon">📅</div>
+    <h4>Laporan Bulanan</h4>
+    <p>Rincian pemasukan, pengeluaran, dan saldo per bulan.</p>
+    <span class="report-cta">Buka →</span>
+  </a>
+
+  <a href="/laporan/tahunan?tahun=<%= filters.tahun %>" class="report-card">
+    <div class="report-icon">📊</div>
+    <h4>Laporan Tahunan</h4>
+    <p>Rekapitulasi 12 bulan dalam satu tahun anggaran.</p>
+    <span class="report-cta">Buka →</span>
+  </a>
+
+  <a href="/laporan/tunggakan?tahun=<%= filters.tahun %>" class="report-card">
+    <div class="report-icon">⚠️</div>
+    <h4>Laporan Tunggakan</h4>
+    <p>Daftar KK yang belum melunasi iuran.</p>
+    <span class="report-cta">Buka →</span>
+  </a>
+
+  <a href="/laporan/kartu-iuran?tahun=<%= filters.tahun %>" class="report-card">
+    <div class="report-icon">🗂️</div>
+    <h4>Kartu Iuran Warga</h4>
+    <p>Matriks pembayaran iuran per KK selama setahun.</p>
+    <span class="report-cta">Buka →</span>
+  </a>
+</div>
+
+<!-- Grafik -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <h3>📈 Arus Kas <%= filters.tahun %></h3>
+      <div class="chart-legend">
+        <span class="legend-item"><i class="dot dot-success"></i> Masuk</span>
+        <span class="legend-item"><i class="dot dot-danger"></i> Keluar</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <canvas id="chartKasRekap" height="110"
+              data-labels='<%- JSON.stringify(ringkasan.rekapKas.map(r => fmt.namaBulan(r.bulan, true))) %>'
+              data-masuk='<%- JSON.stringify(ringkasan.rekapKas.map(r => r.masuk)) %>'
+              data-keluar='<%- JSON.stringify(ringkasan.rekapKas.map(r => r.keluar)) %>'></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>💰 Realisasi Iuran <%= filters.tahun %></h3>
+      <div class="chart-legend">
+        <span class="legend-item"><i class="dot dot-primary"></i> Target</span>
+        <span class="legend-item"><i class="dot dot-success"></i> Realisasi</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <canvas id="chartIuranRekap" height="110"
+              data-labels='<%- JSON.stringify(ringkasan.rekapIuran.map(r => fmt.namaBulan(r.bulan, true))) %>'
+              data-target='<%- JSON.stringify(ringkasan.rekapIuran.map(r => r.target)) %>'
+              data-realisasi='<%- JSON.stringify(ringkasan.rekapIuran.map(r => r.realisasi)) %>'></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Pengeluaran per kategori -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><h3>📤 Pengeluaran per Kategori</h3></div>
+    <div class="card-body no-pad">
+      <% if (ringkasan.pengeluaranKategori.length === 0) { %>
+        <div class="empty-mini">Belum ada pengeluaran pada periode ini.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% ringkasan.pengeluaranKategori.forEach(function(k){ %>
+            <div class="list-row">
+              <div class="list-main">
+                <span class="kategori-chip" style="border-color: <%= k.warna %>;">
+                  <i class="dot" style="background: <%= k.warna %>;"></i><strong><%= k.nama %></strong>
+                </span>
+              </div>
+              <div class="list-value text-danger"><%= fmt.rupiah(k.total) %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>📥 Pemasukan per Kategori</h3></div>
+    <div class="card-body no-pad">
+      <% if (ringkasan.pemasukanKategori.length === 0) { %>
+        <div class="empty-mini">Belum ada pemasukan pada periode ini.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% ringkasan.pemasukanKategori.forEach(function(k){ %>
+            <div class="list-row">
+              <div class="list-main">
+                <span class="kategori-chip" style="border-color: <%= k.warna %>;">
+                  <i class="dot" style="background: <%= k.warna %>;"></i><strong><%= k.nama %></strong>
+                </span>
+              </div>
+              <div class="list-value text-success"><%= fmt.rupiah(k.total) %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Tunggakan -->
+<div class="card">
+  <div class="card-header">
+    <h3>⚠️ Daftar Tunggakan <%= filters.tahun %></h3>
+    <a href="/laporan/tunggakan?tahun=<%= filters.tahun %>" class="btn btn-ghost btn-sm">Detail →</a>
+  </div>
+  <div class="card-body no-pad">
+    <% if (ringkasan.tunggakan.length === 0) { %>
+      <div class="empty-mini">🎉 Tidak ada tunggakan pada tahun ini.</div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Kartu Keluarga</th>
+              <th>No. Rumah</th>
+              <th class="text-center">Jml. Tagihan</th>
+              <th class="text-right">Total Tunggakan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% ringkasan.tunggakan.slice(0, 10).forEach(function(t){ %>
+              <tr>
+                <td><strong><%= t.kepala_keluarga %></strong><small class="cell-sub"><%= t.no_kk %></small></td>
+                <td><%= t.no_rumah || '-' %></td>
+                <td class="text-center"><%= t.jumlah_tagihan %></td>
+                <td class="text-right text-danger"><strong><%= fmt.rupiah(t.total_tunggakan) %></strong></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/js/laporan.js"></script>

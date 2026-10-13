@@ -1,0 +1,11 @@
+<%
+/**
+ * Partial tab navigasi dalam satu modul.
+ * Parameter: tabs = [{ url, label }], active = key aktif
+ */
+%>
+<div class="tabs">
+  <% tabs.forEach(function(t){ %>
+    <a href="<%= t.url %>" class="tab <%= active === t.key ? 'active' : '' %>"><%= t.label %></a>
+  <% }); %>
+</div>

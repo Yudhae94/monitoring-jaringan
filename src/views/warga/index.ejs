@@ -1,0 +1,114 @@
+<%
+  const cards = [
+    { label: 'Total Warga', value: stats.total, sub: 'aktif terdaftar', icon: '👥', tone: 'primary' },
+    { label: 'Laki-laki', value: stats.lakiLaki, icon: '👨', tone: 'info' },
+    { label: 'Perempuan', value: stats.perempuan, icon: '👩', tone: 'warning' },
+    { label: 'Balita & Anak', value: stats.balita + stats.anak, icon: '🧒', tone: 'success' },
+    { label: 'Remaja & Dewasa', value: stats.remaja + stats.dewasa, icon: '🧑', tone: 'neutral' },
+    { label: 'Lansia', value: stats.lansia, icon: '🧓', tone: 'danger' }
+  ];
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Data Warga</h2>
+    <p class="page-desc">Daftar seluruh warga yang terdaftar di lingkungan <%= rt.label %>.</p>
+  </div>
+  <div class="page-actions">
+    <% if (currentUser.role === 'admin') { %>
+      <a href="/warga/create" class="btn btn-primary">+ Tambah Warga</a>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/stat-card', { cards }) %>
+
+<%- include('../partials/filter-bar', {
+  action: '/warga',
+  resetUrl: '/warga',
+  fields: [
+    { name: 'q', label: 'Cari', type: 'search', value: filters.q, placeholder: 'Nama atau NIK…' },
+    { name: 'kk_id', label: 'Kartu Keluarga', type: 'select', value: filters.kk_id, placeholder: 'Semua KK',
+      options: kkOptions.map(k => ({ value: k.id, label: k.kepala_keluarga + ' (No. ' + (k.no_rumah || '-') + ')' })) },
+    { name: 'jenis_kelamin', label: 'Jenis Kelamin', type: 'select', value: filters.jenis_kelamin, options: [
+      { value: 'L', label: 'Laki-laki' },
+      { value: 'P', label: 'Perempuan' }
+    ]},
+    { name: 'status_keluarga', label: 'Status', type: 'select', value: filters.status_keluarga, options: [
+      { value: 'kepala_keluarga', label: 'Kepala Keluarga' },
+      { value: 'istri', label: 'Istri' },
+      { value: 'anak', label: 'Anak' },
+      { value: 'familiar_lain', label: 'Famili Lain' }
+    ]}
+  ]
+}) %>
+
+<div class="card">
+  <div class="card-body no-pad">
+    <% if (data.length === 0) { %>
+      <%- include('../partials/empty-state', {
+        emptyIcon: '👥',
+        emptyTitle: 'Belum ada data warga',
+        emptyMessage: filters.q || filters.kk_id || filters.jenis_kelamin || filters.status_keluarga
+          ? 'Tidak ada warga yang cocok dengan filter Anda.'
+          : 'Tambahkan data warga terlebih dahulu.',
+        emptyUrl: currentUser.role === 'admin' ? '/warga/create' : '/warga',
+        emptyAction: currentUser.role === 'admin' ? '+ Tambah Warga' : null
+      }) %>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>NIK</th>
+              <th>Nama</th>
+              <th>JK</th>
+              <th>Status Keluarga</th>
+              <th>Kartu Keluarga</th>
+              <th>Tgl. Lahir</th>
+              <th>No. HP</th>
+              <th class="text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% data.forEach(function(w){ %>
+              <tr>
+                <td><code class="code code-sm"><%= w.nik %></code></td>
+                <td><strong><%= w.nama %></strong></td>
+                <td>
+                  <span class="badge badge-<%= w.jenis_kelamin === 'L' ? 'info' : 'warning' %>">
+                    <%= labels.JK[w.jenis_kelamin] %>
+                  </span>
+                </td>
+                <td><%= labels.STATUS_KELUARGA[w.status_keluarga] || w.status_keluarga %></td>
+                <td class="text-muted"><%= w.kepala_keluarga %> (No. <%= w.no_rumah || '-' %>)</td>
+                <td><%= w.tanggal_lahir ? fmt.tanggalID(w.tanggal_lahir) : '-' %></td>
+                <td><%= w.no_hp || '-' %></td>
+                <td class="text-right">
+                  <div class="action-group">
+                    <a href="/warga/<%= w.id %>" class="btn btn-ghost btn-xs" title="Detail">👁️</a>
+                    <% if (currentUser.role === 'admin') { %>
+                      <a href="/warga/<%= w.id %>/edit" class="btn btn-ghost btn-xs" title="Edit">✏️</a>
+                      <button type="button" class="btn btn-ghost btn-xs" title="Hapus"
+                              data-confirm-form="/warga/<%= w.id %>"
+                              data-confirm-title="Hapus Data Warga"
+                              data-confirm-message="Hapus data warga &quot;<%= w.nama %>&quot;? Tindakan ini tidak dapat dibatalkan.">🗑️</button>
+                    <% } %>
+  </div>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/pagination', { pagination, baseUrl: '/warga' }) %>
+<%- include('../partials/modal-confirm', {
+  id: 'deleteModal',
+  title: 'Konfirmasi Hapus',
+  message: 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?',
+  action: '#'
+}) %>

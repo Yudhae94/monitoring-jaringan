@@ -1,0 +1,213 @@
+<div class="page-head">
+  <div>
+    <h2><%= laporan.judul %></h2>
+    <p class="page-desc">Rekapitulasi keuangan 12 bulan dalam satu tahun anggaran.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/laporan/tahunan/cetak?tahun=<%= filters.tahun %>" target="_blank" class="btn btn-primary">🖨️ Cetak</a>
+    <a href="/laporan" class="btn btn-ghost">← Laporan</a>
+  </div>
+</div>
+
+<%- include('../partials/filter-bar', {
+  action: '/laporan/tahunan',
+  resetUrl: '/laporan/tahunan',
+  fields: [
+    { name: 'tahun', label: 'Tahun', type: 'select', value: filters.tahun,
+      options: tahunOptions.map(t => ({ value: t, label: t })) }
+  ]
+}) %>
+
+<div class="grid-3">
+  <div class="card">
+    <div class="card-header"><h3>💰 Total Kas Tahun <%= filters.tahun %></h3></div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Total Pemasukan</dt><dd class="text-success"><strong><%= fmt.rupiah(laporan.total.total_masuk) %></strong></dd>
+        <dt>Total Pengeluaran</dt><dd class="text-danger"><strong><%= fmt.rupiah(laporan.total.total_keluar) %></strong></dd>
+        <dt class="dt-strong">SALDO</dt>
+        <dd class="<%= laporan.total.saldo >= 0 ? 'text-success' : 'text-danger' %> dt-strong">
+          <strong><%= fmt.rupiah(laporan.total.saldo) %></strong>
+        </dd>
+        <dt>Jumlah Transaksi</dt><dd><%= laporan.total.jumlah_transaksi %></dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>📋 Iuran Tahun <%= filters.tahun %></h3></div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Total Tagihan</dt><dd><strong><%= laporan.iuranTotal.jumlah_tagihan %></strong></dd>
+        <dt>Target</dt><dd><strong><%= fmt.rupiah(laporan.iuranTotal.total_nominal) %></strong></dd>
+        <dt>Realisasi</dt><dd class="text-success"><strong><%= fmt.rupiah(laporan.iuranTotal.total_terbayar) %></strong></dd>
+        <dt>Tunggakan</dt><dd class="text-danger"><strong><%= fmt.rupiah(laporan.iuranTotal.total_tunggakan) %></strong></dd>
+        <dt>Persentase</dt>
+        <dd><strong><%= laporan.iuranTotal.total_nominal > 0 ? Math.round((laporan.iuranTotal.total_terbayar / laporan.iuranTotal.total_nominal) * 100) : 0 %>%</strong></dd>
+      </dl>
+      <div class="progress-bar mt-2">
+        <div class="progress-fill" style="width: <%= laporan.iuranTotal.total_nominal > 0 ? Math.round((laporan.iuranTotal.total_terbayar / laporan.iuranTotal.total_nominal) * 100) : 0 %>%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>⚠️ Tunggakan</h3></div>
+    <div class="card-body no-pad">
+      <% if (laporan.tunggakan.length === 0) { %>
+        <div class="empty-mini">🎉 Tidak ada tunggakan.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% laporan.tunggakan.slice(0, 8).forEach(function(t){ %>
+            <div class="list-row">
+              <div class="list-main">
+                <strong><%= t.kepala_keluarga %></strong>
+                <small>No. <%= t.no_rumah || '-' %> · <%= t.jumlah_tagihan %> tagihan</small>
+              </div>
+              <div class="list-value text-danger"><%= fmt.rupiah(t.total_tunggakan) %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Tabel rekap 12 bulan -->
+<div class="card">
+  <div class="card-header">
+    <h3>📅 Rekap Kas per Bulan</h3>
+  </div>
+  <div class="card-body no-pad">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Bulan</th>
+            <th class="text-right">Pemasukan</th>
+            <th class="text-right">Pengeluaran</th>
+            <th class="text-right">Selisih</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% laporan.rekapKas.forEach(function(r){ %>
+            <tr>
+              <td><strong><%= fmt.namaBulan(r.bulan) %></strong></td>
+              <td class="text-right text-success"><%= r.masuk > 0 ? fmt.rupiah(r.masuk) : '-' %></td>
+              <td class="text-right text-danger"><%= r.keluar > 0 ? fmt.rupiah(r.keluar) : '-' %></td>
+              <td class="text-right <%= r.saldo >= 0 ? 'text-success' : 'text-danger' %>">
+                <strong><%= fmt.rupiah(r.saldo) %></strong>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+        <tfoot>
+          <tr class="tfoot-total tfoot-grand">
+            <td><strong>TOTAL</strong></td>
+            <td class="text-right text-success"><strong><%= fmt.rupiah(laporan.total.total_masuk) %></strong></td>
+            <td class="text-right text-danger"><strong><%= fmt.rupiah(laporan.total.total_keluar) %></strong></td>
+            <td class="text-right"><strong><%= fmt.rupiah(laporan.total.saldo) %></strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Rekap iuran 12 bulan -->
+<div class="card">
+  <div class="card-header"><h3>💰 Rekap Iuran per Bulan</h3></div>
+  <div class="card-body no-pad">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Bulan</th>
+            <th class="text-right">Target</th>
+            <th class="text-right">Realisasi</th>
+            <th class="text-right">Selisih</th>
+            <th>Persentase</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% laporan.rekapIuran.forEach(function(r){ %>
+            <% var pct = r.target > 0 ? Math.round((r.realisasi / r.target) * 100) : 0; %>
+            <tr>
+              <td><strong><%= fmt.namaBulan(r.bulan) %></strong></td>
+              <td class="text-right"><%= r.target > 0 ? fmt.rupiah(r.target) : '-' %></td>
+              <td class="text-right text-success"><%= r.realisasi > 0 ? fmt.rupiah(r.realisasi) : '-' %></td>
+              <td class="text-right text-danger"><%= (r.target - r.realisasi) > 0 ? fmt.rupiah(r.target - r.realisasi) : '-' %></td>
+              <td>
+                <% if (r.target > 0) { %>
+                  <div class="inline-progress">
+                    <div class="progress-bar progress-bar-sm">
+                      <div class="progress-fill" style="width: <%= pct %>%"></div>
+                    </div>
+                    <span class="progress-label"><%= pct %>%</span>
+                  </div>
+                <% } else { %>
+                  <span class="text-muted">-</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+        <tfoot>
+          <tr class="tfoot-total tfoot-grand">
+            <td><strong>TOTAL</strong></td>
+            <td class="text-right"><strong><%= fmt.rupiah(laporan.iuranTotal.total_nominal) %></strong></td>
+            <td class="text-right text-success"><strong><%= fmt.rupiah(laporan.iuranTotal.total_terbayar) %></strong></td>
+            <td class="text-right text-danger"><strong><%= fmt.rupiah(laporan.iuranTotal.total_tunggakan) %></strong></td>
+            <td><strong><%= laporan.iuranTotal.total_nominal > 0 ? Math.round((laporan.iuranTotal.total_terbayar / laporan.iuranTotal.total_nominal) * 100) : 0 %>%</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><h3>📤 Pengeluaran per Kategori</h3></div>
+    <div class="card-body no-pad">
+      <% if (laporan.pengeluaranKategori.length === 0) { %>
+        <div class="empty-mini">Tidak ada pengeluaran.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% laporan.pengeluaranKategori.forEach(function(k){ %>
+            <div class="list-row">
+              <div class="list-main">
+                <span class="kategori-chip" style="border-color: <%= k.warna %>;">
+                  <i class="dot" style="background: <%= k.warna %>;"></i><strong><%= k.nama %></strong>
+                </span>
+              </div>
+              <div class="list-value text-danger"><%= fmt.rupiah(k.total) %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>📥 Pemasukan per Kategori</h3></div>
+    <div class="card-body no-pad">
+      <% if (laporan.pemasukanKategori.length === 0) { %>
+        <div class="empty-mini">Tidak ada pemasukan.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% laporan.pemasukanKategori.forEach(function(k){ %>
+            <div class="list-row">
+              <div class="list-main">
+                <span class="kategori-chip" style="border-color: <%= k.warna %>;">
+                  <i class="dot" style="background: <%= k.warna %>;"></i><strong><%= k.nama %></strong>
+                </span>
+              </div>
+              <div class="list-value text-success"><%= fmt.rupiah(k.total) %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,76 @@
+<%
+  const prioritasLabel = { normal: 'Normal', penting: 'Penting', urgent: 'Urgent' };
+  const prioritasBadge = { normal: 'neutral', penting: 'warning', urgent: 'danger' };
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Detail Pengumuman</h2>
+    <p class="page-desc">Diterbitkan <%= fmt.tanggalID(pengumuman.tanggal_mulai, { long: true }) %></p>
+  </div>
+  <div class="page-actions">
+    <% if (canManage) { %>
+      <a href="/pengumuman/<%= pengumuman.id %>/edit" class="btn btn-ghost">✏️ Edit</a>
+    <% } %>
+    <a href="/pengumuman" class="btn btn-ghost">← Kembali</a>
+  </div>
+</div>
+
+<article class="card announce-detail announce-<%= pengumuman.prioritas %>">
+  <div class="card-header announce-detail-head">
+    <div>
+      <div class="announce-detail-badges">
+        <span class="badge badge-<%= prioritasBadge[pengumuman.prioritas] %>"><%= prioritasLabel[pengumuman.prioritas] %></span>
+        <span class="badge badge-<%= pengumuman.is_publish ? 'success' : 'neutral' %>">
+          <%= pengumuman.is_publish ? 'Dipublikasikan' : 'Draft' %>
+        </span>
+      </div>
+      <h1 class="announce-detail-title"><%= pengumuman.judul %></h1>
+      <div class="announce-detail-meta">
+        <span>✍️ <%= pengumuman.penulis || 'Pengurus RT' %></span>
+        <span>📅 <%= fmt.tanggalID(pengumuman.tanggal_mulai, { long: true }) %></span>
+        <% if (pengumuman.tanggal_selesai) { %>
+          <span>⏳ Berlaku s/d <%= fmt.tanggalID(pengumuman.tanggal_selesai, { long: true }) %></span>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="announce-content">
+      <% pengumuman.isi.split('\n').forEach(function(paragraf){ %>
+        <% if (paragraf.trim()) { %><p><%= paragraf %></p><% } %>
+      <% }); %>
+    </div>
+
+    <div class="announce-detail-foot">
+      <div class="text-muted">
+        Terakhir diperbarui: <%= fmt.tanggalWaktu(pengumuman.updated_at) %>
+      </div>
+
+      <% if (canManage) { %>
+        <div class="action-group">
+          <form method="POST" action="/pengumuman/<%= pengumuman.id %>/publish?_method=PATCH" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="_method" value="PATCH">
+            <button type="submit" class="btn btn-<%= pengumuman.is_publish ? 'ghost' : 'primary' %> btn-sm">
+              <%= pengumuman.is_publish ? '📥 Turunkan dari Publikasi' : '📢 Publikasikan' %>
+            </button>
+          </form>
+
+          <button type="button" class="btn btn-danger btn-sm"
+                  data-confirm-form="/pengumuman/<%= pengumuman.id %>"
+                  data-confirm-title="Hapus Pengumuman"
+                  data-confirm-message="Hapus pengumuman &quot;<%= pengumuman.judul %>&quot;? Tindakan ini tidak dapat dibatalkan.">🗑️ Hapus</button>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</article>
+
+<%- include('../partials/modal-confirm', {
+  id: 'deleteModal',
+  title: 'Konfirmasi Hapus',
+  message: 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?',
+  action: '#'
+}) %>

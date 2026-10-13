@@ -1,0 +1,86 @@
+<%
+  const roleLabel = { admin: 'Administrator', bendahara: 'Bendahara', warga: 'Warga' };
+  const roleBadge = { admin: 'danger', bendahara: 'warning', warga: 'info' };
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Profil Saya</h2>
+    <p class="page-desc">Kelola informasi akun dan keamanan Anda.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/profil/password" class="btn btn-ghost">🔒 Ubah Password</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- KARTU IDENTITAS -->
+  <div class="card profile-card">
+    <div class="profile-banner"></div>
+    <div class="card-body profile-body">
+      <div class="profile-avatar"><%= user.nama.charAt(0).toUpperCase() %></div>
+      <h3 class="profile-name"><%= user.nama %></h3>
+      <p class="profile-email"><%= user.email %></p>
+      <span class="badge badge-<%= roleBadge[user.role] %>"><%= roleLabel[user.role] %></span>
+
+      <dl class="detail-list mt-3">
+        <dt>Role</dt><dd><%= roleLabel[user.role] %></dd>
+        <dt>Nomor HP</dt><dd><%= user.no_hp || '-' %></dd>
+        <dt>Status Akun</dt>
+        <dd>
+          <span class="badge badge-<%= user.is_active ? 'success' : 'neutral' %>">
+            <%= user.is_active ? 'Aktif' : 'Nonaktif' %>
+          </span>
+        </dd>
+        <dt>Login Terakhir</dt><dd><%= user.last_login ? fmt.tanggalWaktu(user.last_login) : 'Belum pernah' %></dd>
+        <dt>Terdaftar Sejak</dt><dd><%= fmt.tanggalID(user.created_at, { long: true }) %></dd>
+      </dl>
+
+      <% if (user.warga_nama) { %>
+        <div class="info-box mt-3">
+          <strong>🔗 Tertaut ke data warga:</strong><br>
+          <%= user.warga_nama %> — NIK <%= user.warga_nik %><br>
+          <small class="text-muted">KK <%= user.no_kk %> · <%= user.kk_alamat %></small>
+  </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- FORM EDIT -->
+  <div class="card">
+    <div class="card-header"><h3>✏️ Edit Informasi Akun</h3></div>
+    <div class="card-body">
+      <form method="POST" action="/profil?_method=PUT">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="_method" value="PUT">
+
+        <div class="form-group">
+          <label for="nama">Nama Lengkap <span class="req">*</span></label>
+          <input type="text" id="nama" name="nama" class="form-control"
+                 value="<%= user.nama %>" required maxlength="100">
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email <span class="req">*</span></label>
+          <input type="email" id="email" name="email" class="form-control"
+                 value="<%= user.email %>" required maxlength="120">
+        </div>
+
+        <div class="form-group">
+          <label for="no_hp">Nomor HP</label>
+          <input type="text" id="no_hp" name="no_hp" class="form-control"
+                 value="<%= user.no_hp || '' %>" maxlength="20" placeholder="08xxxxxxxxxx">
+        </div>
+
+        <div class="form-actions-inline">
+          <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
+          <a href="/dashboard" class="btn btn-ghost">Batal</a>
+        </div>
+      </form>
+
+      <div class="info-box mt-3">
+        <strong>ℹ️ Catatan:</strong> Role dan penautan ke data warga hanya dapat diubah oleh Administrator.
+      </div>
+    </div>
+  </div>
+</div>

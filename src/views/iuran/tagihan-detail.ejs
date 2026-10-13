@@ -1,0 +1,150 @@
+<%
+  const statusLabel = { lunas: 'Lunas', sebagian: 'Sebagian', belum_bayar: 'Belum Bayar' };
+  const statusBadge = { lunas: 'success', sebagian: 'warning', belum_bayar: 'danger' };
+  const sisa = tagihan.nominal - tagihan.terbayar;
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Tagihan <%= tagihan.kepala_keluarga %></h2>
+    <p class="page-desc">
+      <%= tagihan.jenis_nama %> · Periode <%= fmt.namaBulan(tagihan.periode_bulan) %> <%= tagihan.periode_tahun %>
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="/iuran/tagihan" class="btn btn-ghost">← Kembali</a>
+
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><h3>📋 Detail Tagihan</h3>  </div>
+</div>
+</div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Kartu Keluarga</dt>
+        <dd><strong><%= tagihan.kepala_keluarga %></strong> <small class="text-muted">(No. <%= tagihan.no_rumah || '-' %>)</small></dd>
+        <dt>Nomor KK</dt><dd><code class="code"><%= tagihan.no_kk %></code></dd>
+        <dt>Jenis Iuran</dt><dd><%= tagihan.jenis_nama %></dd>
+        <dt>Periode</dt><dd><%= fmt.namaBulan(tagihan.periode_bulan, true) %> <%= tagihan.periode_tahun %></dd>
+        <dt>Jatuh Tempo</dt><dd><%= tagihan.jatuh_tempo ? fmt.tanggalID(tagihan.jatuh_tempo, { long: true }) : '-' %></dd>
+        <dt>Nominal</dt><dd><strong><%= fmt.rupiah(tagihan.nominal) %></strong></dd>
+        <dt>Terbayar</dt><dd class="text-success"><strong><%= fmt.rupiah(tagihan.terbayar) %></strong></dd>
+        <dt>Sisa</dt>
+        <dd class="<%= sisa > 0 ? 'text-danger' : 'text-success' %>"><strong><%= fmt.rupiah(sisa) %></strong></dd>
+        <dt>Status</dt>
+        <dd><span class="badge badge-<%= statusBadge[tagihan.status] %>"><%= statusLabel[tagihan.status] %></span></dd>
+      </dl>
+  </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>💳 Catat Pembayaran</h3></div>
+    <div class="card-body">
+      <% if (sisa <= 0) { %>
+        <div class="alert alert-success">
+          <span class="alert-icon">✓</span>
+          <span>Tagihan ini sudah <strong>LUNAS</strong>. Tidak ada sisa yang perlu dibayar.</span>
+        </div>
+      <% } else { %>
+        <form method="POST" action="/iuran/pembayaran">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="tagihan_id" value="<%= tagihan.id %>">
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="nominal">Nominal Bayar (Rp) <span class="req">*</span></label>
+              <input type="number" id="nominal" name="nominal" class="form-control"
+                     value="<%= sisa %>" min="1" max="<%= sisa %>" step="500" required>
+              <small class="form-hint">Maksimal <%= fmt.rupiah(sisa) %> (sisa tagihan).</small>
+            </div>
+
+            <div class="form-group">
+              <label for="tanggal">Tanggal Bayar <span class="req">*</span></label>
+              <input type="date" id="tanggal" name="tanggal" class="form-control"
+                     value="<%= fmt.toDateInput(new Date()) %>" required>
+            </div>
+
+            <div class="form-group">
+              <label for="method">Metode <span class="req">*</span></label>
+              <select id="method" name="method" class="form-control" required>
+                <option value="cash">Tunai (Cash)</option>
+                <option value="transfer">Transfer Bank</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="no_referensi">No. Referensi</label>
+              <input type="text" id="no_referensi" name="no_referensi" class="form-control"
+                     maxlength="60" placeholder="Opsional (khusus transfer)">
+            </div>
+
+            <div class="form-group form-group-full">
+              <label for="keterangan">Keterangan</label>
+              <input type="text" id="keterangan" name="keterangan" class="form-control"
+                     maxlength="255" placeholder="Opsional">
+            </div>
+          </div>
+
+          <div class="form-actions-inline">
+            <button type="submit" class="btn btn-success">💰 Catat Pembayaran</button>
+            <button type="button" class="btn btn-ghost" onclick="document.getElementById('nominal').value = <%= sisa %>">
+              Isi Sisa Penuh
+            </button>
+          </div>
+        </form>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>🧾 Riwayat Pembayaran</h3>
+    <span class="badge badge-neutral"><%= tagihan.riwayat.length %> transaksi</span>
+  </div>
+  <div class="card-body no-pad">
+    <% if (tagihan.riwayat.length === 0) { %>
+      <div class="empty-mini">Belum ada pembayaran untuk tagihan ini.</div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th class="text-right">Nominal</th>
+              <th>Metode</th>
+              <th>No. Referensi</th>
+              <th>Keterangan</th>
+              <th class="text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% tagihan.riwayat.forEach(function(p){ %>
+              <tr>
+                <td><%= fmt.tanggalID(p.tanggal, { long: true }) %></td>
+                <td class="text-right text-success"><strong><%= fmt.rupiah(p.nominal) %></strong></td>
+                <td><span class="badge badge-<%= p.method === 'cash' ? 'info' : 'warning' %>"><%= p.method === 'cash' ? 'Tunai' : 'Transfer' %></span></td>
+                <td class="text-muted"><%= p.no_referensi || '-' %></td>
+                <td class="text-muted"><%= p.keterangan || '-' %></td>
+                <td class="text-right">
+                  <button type="button" class="btn btn-ghost btn-xs" title="Batalkan pembayaran"
+                          data-confirm-form="/iuran/pembayaran/<%= p.id %>"
+                          data-confirm-title="Batalkan Pembayaran"
+                          data-confirm-message="Batalkan pembayaran <%= fmt.rupiah(p.nominal) %> tanggal <%= fmt.tanggalID(p.tanggal) %>? Saldo kas akan disesuaikan otomatis.">↩️</button>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/modal-confirm', {
+  id: 'deleteModal',
+  title: 'Konfirmasi',
+  message: 'Lanjutkan tindakan ini?',
+  action: '#'
+}) %>

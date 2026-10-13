@@ -1,0 +1,176 @@
+<%
+  const v = (k) => (old && old[k] !== undefined ? old[k] : '');
+  const err = (k) => (errors && errors[k] ? errors[k] : '');
+%>
+
+<div class="auth-wrapper">
+  <div class="auth-card auth-card-wide">
+
+    <!-- ============ Panel kiri: identitas ============ -->
+    <aside class="auth-brand">
+      <div class="auth-brand-top">
+        <div class="auth-logo">📝</div>
+        <p class="auth-brand-tag">Formulir Pendaftaran</p>
+      </div>
+
+      <div class="auth-brand-body">
+        <h2 class="auth-brand-name">Warga<br>Baru</h2>
+        <p class="auth-brand-desc">
+          Bergabung menjadi warga <%= rt.nama %> untuk mengakses tagihan,
+          kas, dan pengumuman lingkungan.
+        </p>
+      </div>
+
+      <ul class="auth-features">
+        <li><span class="feat-icon">1️⃣</span> Isi data diri &amp; NIK</li>
+        <li><span class="feat-icon">2️⃣</span> Admin verifikasi data</li>
+        <li><span class="feat-icon">3️⃣</span> Akun aktif &amp; bisa login</li>
+      </ul>
+
+      <p class="auth-brand-foot">
+        <%= rt.kota %>, <%= rt.provinsi %><br>
+        Sudah punya akun? <a href="/login" class="auth-foot-link">Masuk di sini</a>
+      </p>
+    </aside>
+
+    <!-- ============ Panel kanan: form ============ -->
+    <main class="auth-main auth-main-scroll">
+      <div class="auth-head">
+        <h1>Data Pemohon</h1>
+        <p>Isi data berikut dengan benar. Data akan diverifikasi admin sebelum akun aktif.</p>
+      </div>
+
+      <% if (Object.keys(errors || {}).length > 0) { %>
+        <div class="alert alert-danger">
+          <span class="alert-icon">!</span>
+          <span>Periksa kembali data yang ditandai merah di bawah.</span>
+        </div>
+      <% } %>
+
+      <form action="/daftar" method="POST" class="auth-form" autocomplete="on" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <h3 class="form-section-title">Data Diri</h3>
+
+        <div class="form-grid">
+          <div class="form-group form-group-full">
+            <label for="nama">Nama Lengkap <span class="req">*</span></label>
+            <input type="text" id="nama" name="nama" class="form-control <%= err('nama') ? 'is-invalid' : '' %>"
+                   value="<%= v('nama') %>" placeholder="Nama sesuai KTP" required>
+            <% if (err('nama')) { %><small class="form-error"><%= err('nama') %></small><% } %>
+          </div>
+
+          <div class="form-group">
+            <label for="nik">NIK (16 digit) <span class="req">*</span></label>
+            <input type="text" id="nik" name="nik" class="form-control <%= err('nik') ? 'is-invalid' : '' %>"
+                   value="<%= v('nik') %>" placeholder="3276xxxxxxxxxxxx" maxlength="16"
+                   inputmode="numeric" required>
+            <% if (err('nik')) { %><small class="form-error"><%= err('nik') %></small><% } %>
+          </div>
+
+          <div class="form-group">
+            <label for="jenis_kelamin">Jenis Kelamin <span class="req">*</span></label>
+            <select id="jenis_kelamin" name="jenis_kelamin" class="form-control <%= err('jenis_kelamin') ? 'is-invalid' : '' %>" required>
+              <option value="">-- Pilih --</option>
+              <% options.jenisKelamin.forEach(function(o){ %>
+                <option value="<%= o.value %>" <%= v('jenis_kelamin') === o.value ? 'selected' : '' %>><%= o.label %></option>
+              <% }); %>
+            </select>
+            <% if (err('jenis_kelamin')) { %><small class="form-error"><%= err('jenis_kelamin') %></small><% } %>
+          </div>
+
+          <div class="form-group">
+            <label for="tempat_lahir">Tempat Lahir</label>
+            <input type="text" id="tempat_lahir" name="tempat_lahir" class="form-control"
+                   value="<%= v('tempat_lahir') %>" placeholder="Contoh: Karawang">
+          </div>
+
+          <div class="form-group">
+            <label for="tanggal_lahir">Tanggal Lahir</label>
+            <input type="date" id="tanggal_lahir" name="tanggal_lahir" class="form-control"
+                   value="<%= v('tanggal_lahir') %>" max="<%= new Date().toISOString().slice(0,10) %>">
+          </div>
+        </div>
+
+        <h3 class="form-section-title">Alamat &amp; Kontak</h3>
+
+        <div class="form-grid">
+          <div class="form-group form-group-full">
+            <label for="alamat">Alamat Lengkap <span class="req">*</span></label>
+            <textarea id="alamat" name="alamat" rows="2"
+                      class="form-control <%= err('alamat') ? 'is-invalid' : '' %>"
+                      placeholder="Nama jalan / cluster, nomor rumah" required><%= v('alamat') %></textarea>
+            <% if (err('alamat')) { %><small class="form-error"><%= err('alamat') %></small><% } %>
+          </div>
+
+          <div class="form-group">
+            <label for="no_rumah">Nomor Rumah</label>
+            <input type="text" id="no_rumah" name="no_rumah" class="form-control"
+                   value="<%= v('no_rumah') %>" placeholder="Contoh: A-12">
+          </div>
+
+          <div class="form-group">
+            <label for="kk_id">Kartu Keluarga</label>
+            <select id="kk_id" name="kk_id" class="form-control">
+              <option value="">Belum punya / tidak tahu</option>
+              <% kkOptions.forEach(function(k){ %>
+                <option value="<%= k.value %>" <%= String(v('kk_id')) === String(k.value) ? 'selected' : '' %>><%= k.label %></option>
+              <% }); %>
+            </select>
+            <small class="form-hint">Opsional — pilih bila sudah terdaftar dalam KK lain.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email <span class="req">*</span></label>
+            <input type="email" id="email" name="email" class="form-control <%= err('email') ? 'is-invalid' : '' %>"
+                   value="<%= v('email') %>" placeholder="nama@email.com" required autocomplete="username">
+            <% if (err('email')) { %><small class="form-error"><%= err('email') %></small><% } %>
+          </div>
+
+          <div class="form-group">
+            <label for="no_hp">Nomor HP</label>
+            <input type="tel" id="no_hp" name="no_hp" class="form-control <%= err('no_hp') ? 'is-invalid' : '' %>"
+                   value="<%= v('no_hp') %>" placeholder="08xxxxxxxxxx" inputmode="tel">
+            <% if (err('no_hp')) { %><small class="form-error"><%= err('no_hp') %></small><% } %>
+          </div>
+        </div>
+
+        <h3 class="form-section-title">Keamanan Akun</h3>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="password">Password <span class="req">*</span></label>
+            <input type="password" id="password" name="password" class="form-control <%= err('password') ? 'is-invalid' : '' %>"
+                   placeholder="Minimal 6 karakter" required minlength="6" autocomplete="new-password">
+            <% if (err('password')) { %><small class="form-error"><%= err('password') %></small><% } %>
+          </div>
+
+          <div class="form-group">
+            <label for="konfirmasi_password">Ulangi Password <span class="req">*</span></label>
+            <input type="password" id="konfirmasi_password" name="konfirmasi_password"
+                   class="form-control <%= err('konfirmasi_password') ? 'is-invalid' : '' %>"
+                   placeholder="Ketik ulang password" required minlength="6" autocomplete="new-password">
+            <% if (err('konfirmasi_password')) { %><small class="form-error"><%= err('konfirmasi_password') %></small><% } %>
+          </div>
+        </div>
+
+        <div class="form-notice">
+          <strong>Catatan:</strong> password yang Anda buat akan dipakai untuk masuk ke akun
+          setelah disetujui admin. Simpan baik-baik!
+        </div>
+
+        <div class="auth-options">
+          <label class="auth-check">
+            <input type="checkbox" required>
+            <span>Saya menyatakan data di atas benar dan dapat dipertanggungjawabkan.</span>
+          </label>
+        </div>
+
+        <div class="auth-form-actions">
+          <a href="/login" class="btn btn-ghost">Batal</a>
+          <button type="submit" class="btn btn-primary btn-lg">Kirim Pendaftaran</button>
+        </div>
+      </form>
+    </main>
+  </div>
+</div>

@@ -1,0 +1,201 @@
+<div class="page-head">
+  <div>
+    <h2><%= laporan.judul %></h2>
+    <p class="page-desc">Laporan keuangan periode <%= fmt.namaBulan(laporan.periode.bulan, true) %> <%= laporan.periode.tahun %>.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/laporan/bulanan/cetak?bulan=<%= filters.bulan %>&tahun=<%= filters.tahun %>" target="_blank" class="btn btn-primary">🖨️ Cetak</a>
+    <a href="/laporan" class="btn btn-ghost">← Laporan</a>
+  </div>
+</div>
+
+<%- include('../partials/filter-bar', {
+  action: '/laporan/bulanan',
+  resetUrl: '/laporan/bulanan',
+  fields: [
+    { name: 'bulan', label: 'Bulan', type: 'select', value: filters.bulan,
+      options: fmt.NAMA_BULAN.map((b, i) => ({ value: i + 1, label: b })) },
+    { name: 'tahun', label: 'Tahun', type: 'select', value: filters.tahun,
+      options: tahunOptions.map(t => ({ value: t, label: t })) }
+  ]
+}) %>
+
+<div class="grid-3">
+  <div class="card">
+    <div class="card-header"><h3>💰 Ringkasan Kas</h3></div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Saldo Awal</dt><dd><strong><%= fmt.rupiah(laporan.saldoAwal) %></strong></dd>
+        <dt>Pemasukan</dt><dd class="text-success"><strong>+ <%= fmt.rupiah(laporan.kas.total_masuk) %></strong></dd>
+        <dt>Pengeluaran</dt><dd class="text-danger"><strong>− <%= fmt.rupiah(laporan.kas.total_keluar) %></strong></dd>
+        <dt>Selisih</dt>
+        <dd class="<%= laporan.kas.saldo >= 0 ? 'text-success' : 'text-danger' %>">
+          <strong><%= fmt.rupiah(laporan.kas.saldo) %></strong>
+        </dd>
+        <dt class="dt-strong">SALDO AKHIR</dt>
+        <dd class="text-primary dt-strong"><strong><%= fmt.rupiah(laporan.saldoAkhir) %></strong></dd>
+      </dl>
+      <div class="text-muted mt-2"><small><%= laporan.kas.jumlah_transaksi %> transaksi pada periode ini</small></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>📊 Ringkasan Iuran</h3></div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Jumlah Tagihan</dt><dd><strong><%= laporan.iuran.jumlah_tagihan %></strong></dd>
+        <dt>Total Target</dt><dd><strong><%= fmt.rupiah(laporan.iuran.total_nominal) %></strong></dd>
+        <dt>Realisasi</dt><dd class="text-success"><strong><%= fmt.rupiah(laporan.iuran.total_terbayar) %></strong></dd>
+        <dt>Tunggakan</dt><dd class="text-danger"><strong><%= fmt.rupiah(laporan.iuran.total_tunggakan) %></strong></dd>
+        <dt>Persentase</dt>
+        <dd>
+          <strong>
+            <%= laporan.iuran.total_nominal > 0
+              ? Math.round((laporan.iuran.total_terbayar / laporan.iuran.total_nominal) * 100)
+              : 0 %>%
+          </strong>
+        </dd>
+      </dl>
+      <div class="progress-bar mt-2">
+        <div class="progress-fill" style="width: <%= laporan.iuran.total_nominal > 0 ? Math.round((laporan.iuran.total_terbayar / laporan.iuran.total_nominal) * 100) : 0 %>%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>🏷️ Per Kategori</h3></div>
+    <div class="card-body">
+      <h4 class="sub-heading">Pemasukan</h4>
+      <% if (laporan.pemasukanKategori.length === 0) { %>
+        <div class="empty-mini">Tidak ada pemasukan.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% laporan.pemasukanKategori.forEach(function(k){ %>
+            <div class="list-row">
+              <div class="list-main"><strong><%= k.nama %></strong></div>
+              <div class="list-value text-success"><%= fmt.rupiah(k.total) %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <h4 class="sub-heading">Pengeluaran</h4>
+      <% if (laporan.pengeluaranKategori.length === 0) { %>
+        <div class="empty-mini">Tidak ada pengeluaran.</div>
+      <% } else { %>
+        <div class="list-stack">
+          <% laporan.pengeluaranKategori.forEach(function(k){ %>
+            <div class="list-row">
+              <div class="list-main"><strong><%= k.nama %></strong></div>
+              <div class="list-value text-danger"><%= fmt.rupiah(k.total) %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Rincian transaksi -->
+<div class="card">
+  <div class="card-header">
+    <h3>📋 Rincian Transaksi Kas</h3>
+    <span class="badge badge-neutral"><%= laporan.rincian.length %> transaksi</span>
+  </div>
+  <div class="card-body no-pad">
+    <% if (laporan.rincian.length === 0) { %>
+      <div class="empty-mini">Tidak ada transaksi pada periode ini.</div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Tipe</th>
+              <th>Kategori</th>
+              <th>Keterangan</th>
+              <th class="text-right">Nominal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% var saldoJalan = laporan.saldoAwal; %>
+            <% laporan.rincian.slice().reverse().forEach(function(k){ %>
+              <% saldoJalan += (k.tipe === 'masuk' ? k.nominal : -k.nominal); %>
+              <tr>
+                <td><%= fmt.tanggalID(k.tanggal) %></td>
+                <td>
+                  <span class="badge badge-<%= k.tipe === 'masuk' ? 'success' : 'danger' %>">
+                    <%= k.tipe === 'masuk' ? '📥 Masuk' : '📤 Keluar' %>
+                  </span>
+                </td>
+                <td><%= k.kategori_nama || '-' %></td>
+                <td><%= k.keterangan %></td>
+                <td class="text-right <%= k.tipe === 'masuk' ? 'text-success' : 'text-danger' %>">
+                  <strong><%= k.tipe === 'masuk' ? '+' : '−' %> <%= fmt.rupiah(k.nominal) %></strong>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+          <tfoot>
+            <tr class="tfoot-total">
+              <td colspan="4" class="text-right"><strong>TOTAL PEMASUKAN</strong></td>
+              <td class="text-right text-success"><strong><%= fmt.rupiah(laporan.kas.total_masuk) %></strong></td>
+            </tr>
+            <tr class="tfoot-total">
+              <td colspan="4" class="text-right"><strong>TOTAL PENGELUARAN</strong></td>
+              <td class="text-right text-danger"><strong><%= fmt.rupiah(laporan.kas.total_keluar) %></strong></td>
+            </tr>
+            <tr class="tfoot-total tfoot-grand">
+              <td colspan="4" class="text-right"><strong>SALDO AKHIR</strong></td>
+              <td class="text-right"><strong><%= fmt.rupiah(laporan.saldoAkhir) %></strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Pembayaran iuran -->
+<div class="card">
+  <div class="card-header">
+    <h3>💳 Pembayaran Iuran Periode Ini</h3>
+    <span class="badge badge-neutral"><%= laporan.pembayaran.length %> pembayaran</span>
+  </div>
+  <div class="card-body no-pad">
+    <% if (laporan.pembayaran.length === 0) { %>
+      <div class="empty-mini">Tidak ada pembayaran iuran pada periode ini.</div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Kartu Keluarga</th>
+              <th>Jenis Iuran</th>
+              <th>Metode</th>
+              <th class="text-right">Nominal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% laporan.pembayaran.forEach(function(p){ %>
+              <tr>
+                <td><%= fmt.tanggalID(p.tanggal) %></td>
+                <td><%= p.kepala_keluarga %> <small class="text-muted">(No. <%= p.no_rumah || '-' %>)</small></td>
+                <td><%= p.jenis_nama %></td>
+                <td><span class="badge badge-<%= p.method === 'cash' ? 'info' : 'warning' %>"><%= p.method === 'cash' ? 'Tunai' : 'Transfer' %></span></td>
+                <td class="text-right text-success"><strong><%= fmt.rupiah(p.nominal) %></strong></td>
+              </tr>
+            <% }); %>
+          </tbody>
+          <tfoot>
+            <tr class="tfoot-total tfoot-grand">
+              <td colspan="4" class="text-right"><strong>TOTAL</strong></td>
+              <td class="text-right"><strong><%= fmt.rupiah(laporan.pembayaran.reduce((s, p) => s + p.nominal, 0)) %></strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>

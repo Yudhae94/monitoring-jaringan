@@ -1,0 +1,125 @@
+<%
+  const statusLabel = { lunas: 'Lunas', sebagian: 'Sebagian', belum_bayar: 'Belum Bayar' };
+  const statusBadge = { lunas: 'success', sebagian: 'warning', belum_bayar: 'danger' };
+
+  const cards = [
+    { label: 'Total Tagihan', value: summary.jumlah_tagihan, sub: fmt.rupiah(summary.total_nominal), icon: '📋', tone: 'primary' },
+    { label: 'Terbayar', value: fmt.rupiah(summary.total_terbayar), sub: `${summary.jumlah_lunas} tagihan lunas`, icon: '✅', tone: 'success' },
+    { label: 'Tunggakan', value: fmt.rupiah(summary.total_tunggakan), sub: `${summary.jumlah_belum + summary.jumlah_sebagian} tagihan belum lunas`, icon: '⚠️', tone: 'danger' },
+    { label: 'Belum Bayar', value: summary.jumlah_belum, sub: `${summary.jumlah_sebagian} sebagian`, icon: '⏳', tone: 'warning' }
+  ];
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Tagihan Iuran</h2>
+    <p class="page-desc">Daftar tagihan iuran per kartu keluarga.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/iuran/generate" class="btn btn-primary">⚙️ Generate Tagihan Massal</a>
+  </div>
+</div>
+
+<%- include('../partials/info-tabs', {
+  tabs: [
+    { url: '/iuran/tagihan', label: '📋 Tagihan', key: 'tagihan' },
+    { url: '/iuran/generate', label: '⚙️ Generate Massal', key: 'generate' },
+    { url: '/iuran/pembayaran', label: '💳 Pembayaran', key: 'pembayaran' },
+    { url: '/iuran/jenis', label: '🏷️ Jenis Iuran', key: 'jenis' }
+  ],
+  active: 'tagihan'
+}) %>
+
+<%- include('../partials/stat-card', { cards }) %>
+
+<%- include('../partials/filter-bar', {
+  action: '/iuran/tagihan',
+  resetUrl: '/iuran/tagihan',
+  fields: [
+    { name: 'q', label: 'Cari', type: 'search', value: filters.q, placeholder: 'No. KK, kepala keluarga, no. rumah…' },
+    { name: 'jenis_iuran_id', label: 'Jenis Iuran', type: 'select', value: filters.jenis_iuran_id, placeholder: 'Semua jenis',
+      options: jenisOptions.map(j => ({ value: j.id, label: j.nama })) },
+    { name: 'kk_id', label: 'Kartu Keluarga', type: 'select', value: filters.kk_id, placeholder: 'Semua KK',
+      options: kkOptions.map(k => ({ value: k.id, label: k.kepala_keluarga })) },
+    { name: 'periode_bulan', label: 'Bulan', type: 'select', value: filters.periode_bulan, placeholder: 'Semua bulan',
+      options: fmt.NAMA_BULAN.map((b, i) => ({ value: i + 1, label: b })) },
+    { name: 'periode_tahun', label: 'Tahun', type: 'select', value: filters.periode_tahun, placeholder: 'Semua tahun',
+      options: tahunOptions.map(t => ({ value: t, label: t })) },
+    { name: 'status', label: 'Status', type: 'select', value: filters.status, placeholder: 'Semua status',
+      options: [
+        { value: 'belum_bayar', label: 'Belum Bayar' },
+        { value: 'sebagian', label: 'Sebagian' },
+        { value: 'lunas', label: 'Lunas' }
+      ]}
+  ]
+}) %>
+
+<div class="card">
+  <div class="card-body no-pad">
+    <% if (data.length === 0) { %>
+      <%- include('../partials/empty-state', {
+        emptyIcon: '📋',
+        emptyTitle: 'Tidak ada tagihan',
+        emptyMessage: 'Belum ada tagihan yang cocok dengan filter. Coba generate tagihan massal terlebih dahulu.',
+        emptyUrl: '/iuran/generate',
+        emptyAction: '⚙️ Generate Tagihan'
+      }) %>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Kartu Keluarga</th>
+              <th>Jenis Iuran</th>
+              <th>Periode</th>
+              <th class="text-right">Nominal</th>
+              <th class="text-right">Terbayar</th>
+              <th class="text-right">Sisa</th>
+              <th>Status</th>
+              <th>Jatuh Tempo</th>
+              <th class="text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% data.forEach(function(t){ %>
+              <tr>
+                <td>
+                  <strong><%= t.kepala_keluarga %></strong>
+                  <small class="cell-sub">No. <%= t.no_rumah || '-' %> · KK <%= t.no_kk %></small>
+                </td>
+                <td><%= t.jenis_nama %></td>
+                <td><%= fmt.namaBulan(t.periode_bulan, true) %> <%= t.periode_tahun %></td>
+                <td class="text-right"><%= fmt.rupiah(t.nominal) %></td>
+                <td class="text-right text-success"><%= fmt.rupiah(t.terbayar) %></td>
+                <td class="text-right <%= (t.nominal - t.terbayar) > 0 ? 'text-danger' : '' %>">
+                  <%= fmt.rupiah(t.nominal - t.terbayar) %>
+                </td>
+                <td><span class="badge badge-<%= statusBadge[t.status] %>"><%= statusLabel[t.status] %></span></td>
+                <td class="text-muted"><%= t.jatuh_tempo ? fmt.tanggalID(t.jatuh_tempo) : '-' %></td>
+                <td class="text-right">
+                  <div class="action-group">
+                    <a href="/iuran/tagihan/<%= t.id %>" class="btn btn-ghost btn-xs" title="Detail & Bayar">👁️</a>
+                    <% if (t.status !== 'lunas' && t.terbayar === 0) { %>
+                      <button type="button" class="btn btn-ghost btn-xs" title="Hapus"
+                              data-confirm-form="/iuran/tagihan/<%= t.id %>"
+                              data-confirm-title="Hapus Tagihan"
+                              data-confirm-message="Hapus tagihan <%= t.jenis_nama %> periode <%= t.periode_bulan %>/<%= t.periode_tahun %> untuk <%= t.kepala_keluarga %>?">🗑️</button>
+                    <% } %>
+  </div>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/pagination', { pagination, baseUrl: '/iuran/tagihan' }) %>
+<%- include('../partials/modal-confirm', {
+  id: 'deleteModal',
+  title: 'Konfirmasi Hapus',
+  message: 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?',
+  action: '#'
+}) %>

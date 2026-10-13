@@ -1,0 +1,37 @@
+<%
+  const roleLabel = { admin: 'Administrator', bendahara: 'Bendahara', warga: 'Warga' };
+  const badgeClass = { admin: 'badge-danger', bendahara: 'badge-warning', warga: 'badge-info' };
+%>
+
+<header class="navbar">
+  <button class="btn-icon sidebar-toggle" id="sidebarToggle" title="Buka menu" aria-label="Buka menu">
+    ☰
+  </button>
+
+  <div class="navbar-title">
+    <h1><%= typeof title !== 'undefined' ? title : 'Dashboard' %></h1>
+    <p class="navbar-subtitle"><%= rt.label %> · Kel. <%= rt.kelurahan %></p>
+  </div>
+
+  <div class="navbar-actions">
+    <button class="btn-icon theme-toggle" id="themeToggle" type="button"
+            title="Ganti mode terang / gelap" aria-label="Ganti mode terang / gelap">
+      <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+    </button>
+
+    <div class="navbar-date">
+      <span class="date-day"><%= new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(new Date()) %></span>
+      <span class="date-full"><%= fmt.tanggalID(new Date(), { long: true }) %></span>
+    </div>
+
+    <% if (currentUser) { %>
+      <div class="navbar-user">
+        <div class="user-avatar"><%= currentUser.nama.charAt(0).toUpperCase() %></div>
+        <div class="user-meta">
+          <strong><%= currentUser.nama %></strong>
+          <span class="badge <%= badgeClass[currentUser.role] %>"><%= roleLabel[currentUser.role] %></span>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</header>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title><%= laporan.judul %> — <%= laporan.rt.label %></title>
+  <link rel="stylesheet" href="/css/print.css">
+</head>
+<body>
+
+  <div class="toolbar no-print">
+    <a href="/laporan/tunggakan?tahun=<%= laporan.periode.tahun %>" class="btn-back">← Kembali</a>
+    <button type="button" class="btn-print" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+  </div>
+
+  <div class="sheet">
+
+    <div class="kop">
+      <div class="kop-logo">🏘️</div>
+      <div class="kop-text">
+        <div class="l1">PENGURUS RUKUN TETANGGA <%= laporan.rt.number %> / RUKUN WARGA <%= laporan.rt.rw %></div>
+        <div class="l2">KELURAHAN <%= laporan.rt.kelurahan.toUpperCase() %> KECAMATAN <%= laporan.rt.kecamatan.toUpperCase() %></div>
+        <div class="l3"><%= laporan.rt.kota.toUpperCase() %>, <%= laporan.rt.provinsi.toUpperCase() %></div>
+        <div class="l4"><%= laporan.rt.alamat %>, Kode Pos <%= laporan.rt.kodePos %></div>
+      </div>
+    </div>
+    <div class="kop-line"></div>
+
+    <div class="judul">
+      <h1><%= laporan.judul.toUpperCase() %></h1>
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-box">
+        <span class="summary-label">Total Tunggakan</span>
+        <span class="summary-value"><%= fmt.rupiah(laporan.total) %></span>
+      </div>
+      <div class="summary-box">
+        <span class="summary-label">Jumlah KK</span>
+        <span class="summary-value"><%= laporan.jumlahKK %></span>
+      </div>
+      <div class="summary-box">
+        <span class="summary-label">Rata-rata per KK</span>
+        <span class="summary-value">
+          <%= fmt.rupiah(laporan.jumlahKK > 0 ? laporan.total / laporan.jumlahKK : 0) %>
+        </span>
+      </div>
+    </div>
+
+    <table class="tbl tbl-grid">
+      <thead>
+        <tr>
+          <th class="w-no">No</th>
+          <th>Kepala Keluarga</th>
+          <th class="w-acc">No. KK</th>
+          <th class="w-num">No. Rumah</th>
+          <th class="w-num">Jml Tagihan</th>
+          <th class="w-money">Total Tunggakan</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (laporan.data.length === 0) { %>
+          <tr>
+            <td colspan="6" class="text-center">
+              Tidak ada tunggakan pada tahun <%= laporan.periode.tahun %>.
+            </td>
+          </tr>
+        <% } else { %>
+          <% laporan.data.forEach(function(t, i){ %>
+            <tr>
+              <td class="text-center"><%= i + 1 %></td>
+              <td><%= t.kepala_keluarga %></td>
+              <td><%= t.no_kk %></td>
+              <td class="text-center"><%= t.no_rumah || '-' %></td>
+              <td class="text-center"><%= t.jumlah_tagihan %></td>
+              <td class="text-right"><%= fmt.rupiah(t.total_tunggakan) %></td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+      <tfoot>
+        <tr class="row-total">
+          <td colspan="5" class="text-right">TOTAL TUNGGAKAN</td>
+          <td class="text-right"><%= fmt.rupiah(laporan.total) %></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="ttd-wrap">
+      <div class="ttd-block">
+        <div class="ttd-city"><%= laporan.rt.kota %>, <%= new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(tanggalCetak) %></div>
+        <div class="ttd-role">Bendahara <%= laporan.rt.label %></div>
+        <div class="ttd-space"></div>
+        <div class="ttd-name"><%= laporan.rt.bendahara %></div>
+      </div>
+      <div class="ttd-block">
+        <div class="ttd-city"><%= laporan.rt.kota %>, <%= new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(tanggalCetak) %></div>
+        <div class="ttd-role">Ketua <%= laporan.rt.label %></div>
+        <div class="ttd-space"></div>
+        <div class="ttd-name"><%= laporan.rt.ketua %></div>
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      Dicetak dari Sistem Informasi Manajemen RT pada
+      <%= new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(tanggalCetak) %> WIB
+    </div>
+  </div>
+
+</body>
+</html>

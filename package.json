@@ -1,0 +1,43 @@
+{
+  "name": "sim-rt-dashboard",
+  "version": "1.0.0",
+  "description": "Sistem Informasi Manajemen RT - Dashboard Admin berbasis Express + EJS + SQLite",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:migrate": "node src/database/migrate.js",
+    "db:seed": "node src/database/seed.js",
+    "db:reset": "node src/database/migrate.js --fresh && node src/database/seed.js",
+    "test:smoke": "node scripts/smoke-test.js",
+    "test:daftar": "node scripts/test-pendaftaran.js",
+    "fix:encoding": "node scripts/fix-encoding.js",
+    "check:views": "node scripts/fix-encoding.js --check"
+  },
+  "keywords": [
+    "rt",
+    "dashboard",
+    "express",
+    "ejs",
+    "sqlite"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-flash": "^0.1.1",
+    "connect-sqlite3": "^0.9.15",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.1",
+    "express-ejs-layouts": "^2.5.1",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "method-override": "^3.0.0",
+    "morgan": "^1.10.0"
+  }
+}

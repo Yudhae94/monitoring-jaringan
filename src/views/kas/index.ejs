@@ -1,0 +1,120 @@
+<%
+  const cards = [
+    { label: 'Saldo Periode', value: fmt.rupiah(summary.saldo), sub: summary.saldo >= 0 ? 'Surplus' : 'Defisit', icon: '🏦', tone: summary.saldo >= 0 ? 'success' : 'danger' },
+    { label: 'Total Pemasukan', value: fmt.rupiah(summary.total_masuk), icon: '📥', tone: 'success' },
+    { label: 'Total Pengeluaran', value: fmt.rupiah(summary.total_keluar), icon: '📤', tone: 'danger' },
+    { label: 'Jumlah Transaksi', value: summary.jumlah_transaksi, icon: '🔢', tone: 'primary' }
+  ];
+%>
+
+<div class="page-head">
+  <div>
+    <h2>Kas RT</h2>
+    <p class="page-desc">Catatan pemasukan dan pengeluaran kas lingkungan <%= rt.label %>.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/kas/kategori" class="btn btn-ghost">🏷️ Kategori</a>
+    <a href="/kas/create" class="btn btn-primary">+ Tambah Transaksi</a>
+  </div>
+</div>
+
+<%- include('../partials/stat-card', { cards }) %>
+
+<%- include('../partials/filter-bar', {
+  action: '/kas',
+  resetUrl: '/kas',
+  fields: [
+    { name: 'q', label: 'Cari', type: 'search', value: filters.q, placeholder: 'Keterangan atau kategori…' },
+    { name: 'tipe', label: 'Tipe', type: 'select', value: filters.tipe, placeholder: 'Semua tipe',
+      options: [{ value: 'masuk', label: 'Pemasukan' }, { value: 'keluar', label: 'Pengeluaran' }] },
+    { name: 'kategori_id', label: 'Kategori', type: 'select', value: filters.kategori_id, placeholder: 'Semua kategori',
+      options: kategoriOptions.map(k => ({ value: k.id, label: k.nama + ' (' + k.tipe + ')' })) },
+    { name: 'bulan', label: 'Bulan', type: 'select', value: filters.bulan, placeholder: 'Semua bulan',
+      options: fmt.NAMA_BULAN.map((b, i) => ({ value: i + 1, label: b })) },
+    { name: 'tahun', label: 'Tahun', type: 'select', value: filters.tahun, placeholder: 'Semua tahun',
+      options: tahunOptions.map(t => ({ value: t, label: t })) }
+  ]
+}) %>
+
+<div class="card">
+  <div class="card-body no-pad">
+    <% if (data.length === 0) { %>
+      <%- include('../partials/empty-state', {
+        emptyIcon: '🏦',
+        emptyTitle: 'Belum ada transaksi',
+        emptyMessage: 'Catat pemasukan atau pengeluaran kas RT untuk memulai.',
+        emptyUrl: '/kas/create',
+        emptyAction: '+ Tambah Transaksi'
+      }) %>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Tipe</th>
+              <th>Kategori</th>
+              <th>Keterangan</th>
+              <th class="text-right">Nominal</th>
+              <th>Sumber</th>
+              <th class="text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% data.forEach(function(k){ %>
+              <tr>
+                <td><%= fmt.tanggalID(k.tanggal) %></td>
+                <td>
+                  <span class="badge badge-<%= k.tipe === 'masuk' ? 'success' : 'danger' %>">
+                    <%= k.tipe === 'masuk' ? '📥 Masuk' : '📤 Keluar' %>
+                  </span>
+                </td>
+                <td>
+                  <% if (k.kategori_nama) { %>
+                    <span class="kategori-chip" style="border-color: <%= k.kategori_warna %>;">
+                      <i class="dot" style="background: <%= k.kategori_warna %>;"></i><%= k.kategori_nama %>
+                    </span>
+                  <% } else { %>
+                    <span class="text-muted">-</span>
+                  <% } %>
+                </td>
+                <td><%= k.keterangan %></td>
+                <td class="text-right <%= k.tipe === 'masuk' ? 'text-success' : 'text-danger' %>">
+                  <strong><%= k.tipe === 'masuk' ? '+' : '−' %> <%= fmt.rupiah(k.nominal) %></strong>
+                </td>
+                <td>
+                  <span class="badge badge-<%= k.sumber === 'iuran' ? 'info' : 'neutral' %>">
+                    <%= k.sumber === 'iuran' ? 'Iuran' : 'Manual' %>
+                  </span>
+                </td>
+                <td class="text-right">
+                  <div class="action-group">
+                    <% if (k.sumber === 'manual') { %>
+                      <a href="/kas/<%= k.id %>/edit" class="btn btn-ghost btn-xs" title="Edit">✏️</a>
+                    <% } %>
+                    <% if (currentUser.role === 'admin' && k.sumber === 'manual') { %>
+                      <button type="button" class="btn btn-ghost btn-xs" title="Hapus"
+                              data-confirm-form="/kas/<%= k.id %>"
+                              data-confirm-title="Hapus Transaksi"
+                              data-confirm-message="Hapus transaksi &quot;<%= k.keterangan %>&quot; sebesar <%= fmt.rupiah(k.nominal) %>?">🗑️</button>
+                    <% } else if (k.sumber === 'iuran') { %>
+                      <span class="text-muted" title="Transaksi otomatis dari pembayaran iuran">🔒</span>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/pagination', { pagination, baseUrl: '/kas' }) %>
+<%- include('../partials/modal-confirm', {
+  id: 'deleteModal',
+  title: 'Konfirmasi Hapus',
+  message: 'Data yang dihapus tidak dapat dikembalikan. Lanjutkan?',
+  action: '#'
+}) %>
